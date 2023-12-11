@@ -10,7 +10,7 @@ class Constellation:
     self.elements = []
 
   def add_element(self, x, y, hyperlink, content):
-    element = {'x': x, 'y': y, 'hyperlink': hyperlink, 'content': content}
+    element = {'x': x, 'y': y, 'image': hyperlink, 'content': content}
     self.elements.append(element)
 
   def add_elements(self, elements):
@@ -19,9 +19,13 @@ class Constellation:
   def generate_html(self):
     html_elements = []
     for element in self.elements:
+      print(element)
       element_style = f"position: absolute; left: {element['x']}px; top: {element['y']}px;"
-      # Corrected by changing the quotes around the keys
-      html_element = f'<a href="{element["hyperlink"]}" style="{element_style}">{element["content"]}</a>'
+      # Use image as content if available
+      if 'image' in element:
+        html_element = f'<img src="{element["image"]}" style="{element_style}" alt="{element.get("content", " ")}">'
+      else:
+        html_element = f'<div style="{element_style}">{element.get("content", " ")}</div>'
       html_elements.append(html_element)
 
     frame_styles = f"width: {self.width}px; height: {self.height}px; position: relative;"

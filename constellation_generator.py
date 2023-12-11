@@ -10,13 +10,21 @@ def aggregate_visible_elements(visible_elements_by_xml,
   """
   visible_elements = []
   for xml_element in visible_elements_by_xml:
-    xml_element_id = xml_element.id
-    xml_element_name = xml_element.name
-    xml_element_xpath = xml_element.xpath
-    xml_element_class = xml_element.class_
-    xml_element_text = xml_element.text
-    xml_element_screenshot = visible_elements_
-
+    xml_element_id = xml_element.get('id')
+    xml_element_name = xml_element.get('name')
+    xml_element_xpath = xml_element.get('xpath')
+    xml_element_class = xml_element.get('class')
+    xml_element_text = xml_element.get('text')
+    # Assuming there is a method to get the screenshot representation
+    xml_element_screenshot = xml_element.get_screenshot_representation()
+    visible_elements.append({
+      'id': xml_element_id,
+      'name': xml_element_name,
+      'xpath': xml_element_xpath,
+      'class': xml_element_class,
+      'text': xml_element_text,
+      'screenshot': xml_element_screenshot
+    })
 
 def generate_constellation(width, height, url) -> Constellation:
   """navigate to url, wait for elements to stabilize, 
