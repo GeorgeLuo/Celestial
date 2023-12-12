@@ -19,11 +19,14 @@ class Constellation:
   def generate_html(self):
     html_elements = []
     for element in self.elements:
-      print(element)
       element_style = f"position: absolute; left: {element['x']}px; top: {element['y']}px;"
       # Use image as content if available
       if 'image' in element:
-        html_element = f'<img src="{element["image"]}" style="{element_style}" alt="{element.get("content", " ")}">'
+
+        image_path_parts = element['image'].split('/')
+        clean_image_path = '/'.join(image_path_parts[2:])
+
+        html_element = f'<img src="{clean_image_path}" style="{element_style}" alt="{element.get("content", " ")}">'
       else:
         html_element = f'<div style="{element_style}">{element.get("content", " ")}</div>'
       html_elements.append(html_element)
@@ -34,7 +37,7 @@ class Constellation:
 
     return f'<!DOCTYPE html><html><head><title>Web Page</title></head><body>{frame_html}</body></html>'
 
-  def save_to_file(self, file_path):
+  def save_to_html_file(self, file_path):
     # Ensure the file_path points to a file, not a directory
     if os.path.isdir(file_path):
       raise IsADirectoryError(f"The file path {file_path} is a directory.")

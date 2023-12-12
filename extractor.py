@@ -8,6 +8,21 @@ import numpy as np
 
 from constellation import Constellation
 
+def extract_page(url, output_html="main.html", render_dir="./capture", width=1280, height=720):
+  extractor = Extractor(width, height)
+  extractor.navigate(url)
+  xml_elements = extractor.get_visible_elements_by_xml()
+  screenshot_elements = extractor.get_visible_elements_by_screenshot(assets_output_path=os.path.join(render_dir, "assets"))
+
+  # Example usage
+  page = Constellation(width, height)
+  for element in screenshot_elements:
+    page.add_element(element['x'], element['y'], element['image'], '')
+
+  # Save the HTML to a file named 'output.html'
+  page.save_to_html_file(os.path.join(render_dir, output_html))
+
+
 
 def find_atomic_elements(image, assets_path, granularity=20):
   # Convert the image to grayscale
@@ -76,6 +91,9 @@ class Extractor:
     """Navigate to a URL"""
     self.driver.get(url)
 
+  def set_render_path(self, render_path):
+    self.render_path = render_path
+
   def screenshot(self):
     """Take a screenshot of the current page""" ""
     screenshot_png = self.driver.get_screenshot_as_png()
@@ -111,27 +129,14 @@ class Extractor:
         visible_elements.append(element_dict)
     return visible_elements
 
-  def get_visible_elements_by_screenshot(self):
+  def get_visible_elements_by_screenshot(self, assets_output_path='./site/assets'):
     """Get interactive elements that are visible by screenshot parsing strategy."""
     screenshot = self.screenshot()
-    visible_elements = find_atomic_elements(screenshot, './renders/assets')
+    visible_elements = find_atomic_elements(screenshot, assets_path=assets_output_path)
 
     return visible_elements
 
   def close_driver(self):
     self.driver.quit()
 
-
-extractor = Extractor(1000, 500)
-extractor.navigate("http://google.com")
-xml_elements = extractor.get_visible_elements_by_xml()
-screenshot_elements = extractor.get_visible_elements_by_screenshot()
-
-# Example usage
-page = Constellation(1000, 500)
-for element in screenshot_elements:
-  print(element['image'])
-  page.add_element(element['x'], element['y'], element['image'], '')
-
-# Save the HTML to a file named 'output.html'
-page.save_to_file('./output.html')
+extract_page("https://www.google.com/", render_dir="./renders")
