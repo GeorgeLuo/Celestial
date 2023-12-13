@@ -54,14 +54,15 @@ def extract_contextual_metadata_from_boundary(image, boundary, granularity=20):
     return {'text': text}
 
 def extract_contextual_metadata_from_image(image):
-    """given full image, the bounds of an element in the image and granularity extract meaningful information"""
+    """extract meaningful information from image"""
 
     text = extract_text_from_image(image)
     return {'text': text}
 
 
 def extract_subimage_from_image(image, boundary):
-    
+    """return a subimage from within the image based on parameters defined in boundary"""
+
     x = boundary['x']
     y = boundary['y']
     w = boundary['w']
@@ -69,18 +70,16 @@ def extract_subimage_from_image(image, boundary):
 
     return image[y:y + h, x:x + w]
 
-def parse_atomic_element(atomic_element):
-  """"""
-  return {"text": extract_contextual_metadata_from_boundary(atomic_element)}
-
 def text_to_id(text):
-  """Convert text to a string where contiguous white spaces are turned into an underscore and non-alphanumeric characters are discarded"""
+  """Convert text to a string where contiguous white spaces are turned into an 
+  underscore and non-alphanumeric characters are discarded"""
+
   return ''.join('_' if c.isspace() else c for c in text
                  if c.isalnum() or c.isspace()).replace(' ', '')
 
 
 def write_image_to_file(atomic_element, assets_output_path, filename):
-  """Save the extracted element image"""
+  """Save the image to file utility"""
 
   element_image_path = os.path.join(assets_output_path, filename)
   if cv2.imwrite(element_image_path, atomic_element):
@@ -90,6 +89,8 @@ def write_image_to_file(atomic_element, assets_output_path, filename):
 
 
 def find_atomic_element_boundaries(image, granularity=20):
+  """get boundaries of elements within the image"""
+
   # Convert the image to grayscale
   gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
   # Apply GaussianBlur to reduce noise and improve contour detection
@@ -114,49 +115,6 @@ def find_atomic_element_boundaries(image, granularity=20):
     x, y, w, h = cv2.boundingRect(contour)
     boundaries.append({'x': x, 'y': y, 'w': w, 'h': h})
   return boundaries
-
-  atomic_elements = []
-  # Make sure the assets directory exists
-  if not os.path.exists(assets_path):
-    os.makedirs(assets_path)
-
-  # Iterate over contours
-  for i, contour in enumerate(contours):
-    # Create a bounding rect for each contour
-    x, y, w, h = cv2.boundingRect(contour)
-
-    # Adjust granularity rejection threshold as needed
-    if w * h < granularity:
-      continue
-
-    # Extract the text block's image from the screenshot
-    element_image = image[y:y + h, x:x + w]
-
-    contextual_metadata = parse_atomic_element(element_image)
-    write_image_to_file(filename=contextual_metadata["text"])
-
-    # Save the extracted element image
-    element_image_path = os.path.join(assets_path, f'text_element_{i}.png')
-    if cv2.imwrite(element_image_path, element_image):
-      print(f"Element image saved to {element_image_path}")
-    else:
-      print(f"Failed to save element image to {element_image_path}")
-      continue  # Skip the current iteration if the image wasn't saved
-
-    # Add additional checks where extract_meaning_from_image is called
-
-    # Represent atomic elements as dictionaries
-    atomic_elements.append({
-        'x': x,
-        'y': y,
-        'width': w,
-        'height': h,
-        'image': element_image_path,
-        'text': element_text
-    })
-
-  return atomic_elements
-
 
 class Extractor:
   """Interface to extract elements from a source"""
@@ -211,8 +169,9 @@ class Extractor:
         visible_elements.append(element_dict)
     return visible_elements
   
-  def generate_filename(self, metadata):
-    """"""
+  def generate_unique_filename(self, metadata):
+    """generate a unique filename from metadata"""
+
     if 'text' in metadata and metadata['text'] != '':
       return f'graphic_{text_to_id(metadata["text"])}.png'
     else:
@@ -224,7 +183,6 @@ class Extractor:
                                          assets_output_path='./site/assets', granularity=20):
     """Get interactive elements that are visible by screenshot parsing strategy."""
 
-    # Make sure the assets directory exists
     if not os.path.exists(assets_output_path):
       os.makedirs(assets_output_path)
 
@@ -232,7 +190,7 @@ class Extractor:
 
     screenshot = self.screenshot()
 
-    element_boundaries = find_atomic_element_boundaries(screenshot)
+    element_boundaries = find_atomic_element_boundaries(screenshot, granularity)
     for boundary in element_boundaries:
 
       # subimage is too small for consideration
@@ -243,7 +201,7 @@ class Extractor:
       metadata = extract_contextual_metadata_from_image(subimage)
 
       boundary['metadata'] = metadata
-      filename = self.generate_filename(metadata)
+      filename = self.generate_unique_filename(metadata)
       boundary['image'] = os.path.join(assets_output_path, filename)
       write_image_to_file(subimage, assets_output_path=assets_output_path, filename=filename)
       visible_elements.append(boundary)
