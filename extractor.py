@@ -14,20 +14,20 @@ def extract_page(url,
                  output_html="main.html",
                  render_dir="./capture",
                  width=1280,
-                 height=720):
+                 height=720, granularity=20) -> Constellation:
   extractor = Extractor(width, height)
   extractor.navigate(url)
   xml_elements = extractor.get_visible_elements_by_xml()
   screenshot_elements = extractor.get_visible_elements_by_screenshot(
-      assets_output_path=os.path.join(render_dir, "assets"))
+      assets_output_path=os.path.join(render_dir, "assets"), granularity=granularity)
 
-  # Example usage
   page = Constellation(width, height)
   for element in screenshot_elements:
-    page.add_element(element['x'], element['y'], element['image'], '')
+    page.add_element(element['x'], element['y'], element['metadata'], element['image'], '')
 
   # Save the HTML to a file named 'output.html'
   page.save_to_html_file(os.path.join(render_dir, output_html))
+  return page
 
 
 def extract_text_from_image(image):
@@ -82,9 +82,7 @@ def write_image_to_file(atomic_element, assets_output_path, filename):
   """Save the image to file utility"""
 
   element_image_path = os.path.join(assets_output_path, filename)
-  if cv2.imwrite(element_image_path, atomic_element):
-    print(f"Element image saved to {element_image_path}")
-  else:
+  if not cv2.imwrite(element_image_path, atomic_element):
     print(f"Failed to save element image to {element_image_path}")
 
 
@@ -173,9 +171,9 @@ class Extractor:
     """generate a unique filename from metadata"""
 
     if 'text' in metadata and metadata['text'] != '':
-      return f'graphic_{text_to_id(metadata["text"])}.png'
+      return f'textual_graphic_{text_to_id(metadata["text"])}.png'
     else:
-      filename = f'{self.default_image_count}.png'
+      filename = f'graphic_{self.default_image_count}.png'
       self.default_image_count = self.default_image_count + 1
       return filename
 
@@ -210,6 +208,3 @@ class Extractor:
 
   def close_driver(self):
     self.driver.quit()
-
-
-extract_page("https://www.google.com/", render_dir="./renders")

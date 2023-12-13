@@ -9,8 +9,8 @@ class Constellation:
     self.height = height
     self.elements = []
 
-  def add_element(self, x, y, hyperlink, content):
-    element = {'x': x, 'y': y, 'image': hyperlink, 'content': content}
+  def add_element(self, x, y, metadata, hyperlink, content):
+    element = {'x': x, 'y': y, 'metadata': metadata, 'image': hyperlink, 'content': content}
     self.elements.append(element)
 
   def add_elements(self, elements):
@@ -22,7 +22,6 @@ class Constellation:
       element_style = f"position: absolute; left: {element['x']}px; top: {element['y']}px;"
       # Use image as content if available
       if 'image' in element:
-        print(element['image'])
         image_path_parts = element['image'].split('/')
         clean_image_path = '/'.join(image_path_parts[2:])
 
