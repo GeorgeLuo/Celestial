@@ -22,7 +22,7 @@ class Constellation:
       element_style = f"position: absolute; left: {element['x']}px; top: {element['y']}px;"
       # Use image as content if available
       if 'image' in element:
-
+        print(element['image'])
         image_path_parts = element['image'].split('/')
         clean_image_path = '/'.join(image_path_parts[2:])
 
