@@ -16,6 +16,9 @@ def extract_page(url,
                  width=1280,
                  height=720,
                  granularity=20) -> Constellation:
+  """given a webdriver, parse a screenshot from a browser of provided width and height 
+  and output a recreation of the website as a Constellation render"""
+
   extractor = Extractor(width, height, driver=driver)
   extractor.navigate(url)
   xml_elements = extractor.get_visible_elements_by_xml()
