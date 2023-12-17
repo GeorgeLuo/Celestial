@@ -127,6 +127,48 @@ def find_atomic_element_boundaries(image, granularity=20):
 def print_dimensions(image):
   print(f'image dimensions: {image.shape[1]}x{image.shape[0]}')
 
+def generate_unique_filename(metadata, unique_image_seed=[0]):
+  """generate a unique filename from metadata"""
+
+  if 'text' in metadata and metadata['text'] != '':
+    return f'textual_graphic_{text_to_id(metadata["text"])}.png'
+  else:
+    filename = f'graphic_{unique_image_seed[0]}.png'
+    unique_image_seed[0] += 1
+    return filename
+
+
+def parse_image_boundaries(assets_output_path, granularity, image, unique_image_seed=[0]):
+    element_boundaries = find_atomic_element_boundaries(
+      image, granularity)
+  
+    visible_elements = []
+
+    for boundary in element_boundaries:
+    # subimage is too small for consideration
+      if boundary['w'] * boundary['h'] < granularity:
+        continue
+
+      subimage = extract_subimage_from_image(image, boundary)
+
+    # TODO : tune this value
+      std_dev = standard_deviation_of_image(subimage) 
+      if std_dev is not None and standard_deviation_of_image(subimage) < 3:
+        continue
+
+      metadata = extract_contextual_metadata_from_image(subimage)
+
+      boundary['metadata'] = metadata
+      filename = generate_unique_filename(metadata, unique_image_seed)
+
+      boundary['image'] = os.path.join(assets_output_path, filename)
+      write_image_to_file(subimage,
+                        assets_output_path=assets_output_path,
+                        filename=filename)
+      visible_elements.append(boundary)
+
+    return visible_elements
+
 class Extractor:
   """Interface to extract elements from a source"""
 
@@ -143,8 +185,7 @@ class Extractor:
       self.driver = webdriver.Chrome(options=options)
       self.driver.set_window_size(width, height)
 
-    self.default_image_count = 0
-    self.unique_filename_count = {}
+    self.default_image_count = [0]
 
   def navigate(self, url):
     """Navigate to a URL"""
@@ -218,16 +259,6 @@ class Extractor:
         visible_elements.append(element_dict)
     return visible_elements
 
-  def generate_unique_filename(self, metadata):
-    """generate a unique filename from metadata"""
-
-    if 'text' in metadata and metadata['text'] != '':
-      return f'textual_graphic_{text_to_id(metadata["text"])}.png'
-    else:
-      filename = f'graphic_{self.default_image_count}.png'
-      self.default_image_count = self.default_image_count + 1
-      return filename
-
   def get_visible_elements_by_screenshot(self,
                                          assets_output_path='./site/assets',
                                          granularity=20, screenshot=None):
@@ -239,37 +270,7 @@ class Extractor:
     if screenshot is None:
       screenshot = self.screenshot_and_rescale()
 
-    return self.parse_image_boundaries(assets_output_path, granularity, screenshot)
-
-  def parse_image_boundaries(self, assets_output_path, granularity, screenshot):
-      element_boundaries = find_atomic_element_boundaries(
-        screenshot, granularity)
-    
-      visible_elements = []
-
-      for boundary in element_boundaries:
-      # subimage is too small for consideration
-        if boundary['w'] * boundary['h'] < granularity:
-          continue
-
-        subimage = extract_subimage_from_image(screenshot, boundary)
-
-      # TODO : tune this value
-        if standard_deviation_of_image(subimage) < 3:
-          continue
-
-        metadata = extract_contextual_metadata_from_image(subimage)
-
-        boundary['metadata'] = metadata
-        filename = self.generate_unique_filename(metadata)
-
-        boundary['image'] = os.path.join(assets_output_path, filename)
-        write_image_to_file(subimage,
-                          assets_output_path=assets_output_path,
-                          filename=filename)
-        visible_elements.append(boundary)
-
-      return visible_elements
+    return parse_image_boundaries(assets_output_path, granularity, screenshot)
 
   def close_driver(self):
     self.driver.quit()
