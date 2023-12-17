@@ -3,8 +3,6 @@ from inferrencer import infer_interface_flows
 from flow_executor import do_flow
 from selenium import webdriver
 
-
-
 width = 1280
 height = 720
 

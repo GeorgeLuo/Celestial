@@ -5,7 +5,6 @@ def do_flow(driver, interface_flows, user_flow_id):
     flow_executor = FlowExecutor(driver, interface_flows)
     flow_executor.do_flow(user_flow_id)
 
-
 class FlowExecutor:
     def __init__(self, driver, interface_flows):
         self.driver = driver

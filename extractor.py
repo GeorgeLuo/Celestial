@@ -8,7 +8,6 @@ import numpy as np
 
 from constellation import Constellation
 
-
 def extract_page(url,
                  driver=None,
                  output_html="main.html",
@@ -41,25 +40,6 @@ def extract_text_from_image(image):
   return pytesseract.image_to_string(image)
 
 
-def extract_contextual_metadata_from_boundary(image, boundary, granularity=20):
-  """given full image, the bounds of an element in the image and granularity extract meaningful information"""
-
-  x = boundary['x']
-  y = boundary['y']
-  w = boundary['w']
-  h = boundary['h']
-
-  # Adjust granularity rejection threshold as needed
-  if w * h < granularity:
-    return None
-
-  # Extract the text block's image from the screenshot
-  element_image = image[y:y + h, x:x + w]
-
-  text = extract_text_from_image(element_image)
-  return {'text': text}
-
-
 def extract_contextual_metadata_from_image(image):
   """extract meaningful information from image"""
 
@@ -69,13 +49,33 @@ def extract_contextual_metadata_from_image(image):
 
 def extract_subimage_from_image(image, boundary):
   """return a subimage from within the image based on parameters defined in boundary"""
-
+  
   x = boundary['x']
   y = boundary['y']
   w = boundary['w']
   h = boundary['h']
+  
+  # Add an extra pixel to the width and height
+  # TODO: tune these values
+  return image[y - 3:y + h + 3, x - 3:x + w + 3]
 
-  return image[y:y + h, x:x + w]
+def standard_deviation_of_image(image):
+  """Calculate the standard deviation of the grayscale image."""
+  try:
+    # Ensure image is in the expected format, e.g., not None or empty
+    if image is None or image.size == 0:
+      return None
+
+    # Convert the image to grayscale
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+  
+    # Calculate the standard deviation
+    sigma = np.std(gray_image)
+    return sigma
+  except Exception as e:
+    # If there's any error, print it and return None
+    print(f"Error in standard_deviation_of_image: {e}")
+    return None
 
 
 def text_to_id(text):
@@ -92,7 +92,6 @@ def write_image_to_file(atomic_element, assets_output_path, filename):
   element_image_path = os.path.join(assets_output_path, filename)
   if not cv2.imwrite(element_image_path, atomic_element):
     print(f"Failed to save element image to {element_image_path}")
-
 
 def find_atomic_element_boundaries(image, granularity=20):
   """get boundaries of elements within the image"""
@@ -119,13 +118,14 @@ def find_atomic_element_boundaries(image, granularity=20):
   boundaries = []
   for contour in contours:
     x, y, w, h = cv2.boundingRect(contour)
+    # Adjust granularity rejection threshold as needed
+    if w * h < granularity:
+      continue
     boundaries.append({'x': x, 'y': y, 'w': w, 'h': h})
   return boundaries
 
 def print_dimensions(image):
   print(f'image dimensions: {image.shape[1]}x{image.shape[0]}')
-
-
 
 class Extractor:
   """Interface to extract elements from a source"""
@@ -172,7 +172,7 @@ class Extractor:
 
     return image
 
-  def screenshot_and_rescale(self):
+  def screenshot_and_rescale(self, write_file=None):
     """Take a screenshot of the current page and then rescale it to the desired dimensions."""
     # Take the raw screenshot
     image = self.screenshot()
@@ -184,7 +184,9 @@ class Extractor:
     # Resize the image to the new size
     resized_image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
     # Write the resized image to a file
-    cv2.imwrite('resized_screenshot.png', resized_image)
+
+    if write_file is not None:
+      cv2.imwrite(write_file, resized_image)
 
     return resized_image
 
@@ -228,36 +230,46 @@ class Extractor:
 
   def get_visible_elements_by_screenshot(self,
                                          assets_output_path='./site/assets',
-                                         granularity=20):
+                                         granularity=20, screenshot=None):
     """Get interactive elements that are visible by screenshot parsing strategy."""
 
     if not os.path.exists(assets_output_path):
       os.makedirs(assets_output_path)
 
-    visible_elements = []
+    if screenshot is None:
+      screenshot = self.screenshot_and_rescale()
 
-    screenshot = self.screenshot_and_rescale()
+    return self.parse_image_boundaries(assets_output_path, granularity, screenshot)
 
-    element_boundaries = find_atomic_element_boundaries(
+  def parse_image_boundaries(self, assets_output_path, granularity, screenshot):
+      element_boundaries = find_atomic_element_boundaries(
         screenshot, granularity)
-    for boundary in element_boundaries:
+    
+      visible_elements = []
 
+      for boundary in element_boundaries:
       # subimage is too small for consideration
-      if boundary['w'] * boundary['h'] < granularity:
-        continue
+        if boundary['w'] * boundary['h'] < granularity:
+          continue
 
-      subimage = extract_subimage_from_image(screenshot, boundary)
-      metadata = extract_contextual_metadata_from_image(subimage)
+        subimage = extract_subimage_from_image(screenshot, boundary)
 
-      boundary['metadata'] = metadata
-      filename = self.generate_unique_filename(metadata)
-      boundary['image'] = os.path.join(assets_output_path, filename)
-      write_image_to_file(subimage,
+      # TODO : tune this value
+        if standard_deviation_of_image(subimage) < 3:
+          continue
+
+        metadata = extract_contextual_metadata_from_image(subimage)
+
+        boundary['metadata'] = metadata
+        filename = self.generate_unique_filename(metadata)
+
+        boundary['image'] = os.path.join(assets_output_path, filename)
+        write_image_to_file(subimage,
                           assets_output_path=assets_output_path,
                           filename=filename)
-      visible_elements.append(boundary)
+        visible_elements.append(boundary)
 
-    return visible_elements
+      return visible_elements
 
   def close_driver(self):
     self.driver.quit()
