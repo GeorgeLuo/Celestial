@@ -8,3 +8,6 @@ A constellation is a representation of an interface as a coordinate system of el
 
 By converting interfaces from xml-like representations to positions in space, we can denote actions with coordinate precision instead of seraching for element by xpath.
 
+### Models
+
+#### Find rectangles

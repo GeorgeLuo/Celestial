@@ -8,6 +8,7 @@ import numpy as np
 
 from constellation import Constellation
 
+
 def extract_page(url,
                  driver=None,
                  output_html="main.html",
@@ -47,17 +48,19 @@ def extract_contextual_metadata_from_image(image):
   return {'text': text}
 
 
-def extract_subimage_from_image(image, boundary):
+def extract_subimage_from_image(image, boundary, buffer_pixels=3):
   """return a subimage from within the image based on parameters defined in boundary"""
-  
+
   x = boundary['x']
   y = boundary['y']
   w = boundary['w']
   h = boundary['h']
-  
+
   # Add an extra pixel to the width and height
   # TODO: tune these values
-  return image[y - 3:y + h + 3, x - 3:x + w + 3]
+  return image[y - buffer_pixels:y + h + buffer_pixels,
+               x - buffer_pixels:x + w + buffer_pixels]
+
 
 def standard_deviation_of_image(image):
   """Calculate the standard deviation of the grayscale image."""
@@ -68,7 +71,7 @@ def standard_deviation_of_image(image):
 
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-  
+
     # Calculate the standard deviation
     sigma = np.std(gray_image)
     return sigma
@@ -92,6 +95,7 @@ def write_image_to_file(atomic_element, assets_output_path, filename):
   element_image_path = os.path.join(assets_output_path, filename)
   if not cv2.imwrite(element_image_path, atomic_element):
     print(f"Failed to save element image to {element_image_path}")
+
 
 def find_atomic_element_boundaries(image, granularity=20):
   """get boundaries of elements within the image"""
@@ -124,8 +128,10 @@ def find_atomic_element_boundaries(image, granularity=20):
     boundaries.append({'x': x, 'y': y, 'w': w, 'h': h})
   return boundaries
 
+
 def print_dimensions(image):
   print(f'image dimensions: {image.shape[1]}x{image.shape[0]}')
+
 
 def generate_unique_filename(metadata, unique_image_seed=[0]):
   """generate a unique filename from metadata"""
@@ -138,36 +144,43 @@ def generate_unique_filename(metadata, unique_image_seed=[0]):
     return filename
 
 
-def parse_image_boundaries(assets_output_path, granularity, image, unique_image_seed=[0]):
-    element_boundaries = find_atomic_element_boundaries(
-      image, granularity)
-  
-    visible_elements = []
+def parse_image_boundaries(assets_output_path,
+                           granularity,
+                           image,
+                           unique_image_seed=[0],
+                           std_dev_threshold=3,
+                           buffer_pixels=3):
+  element_boundaries = find_atomic_element_boundaries(image, granularity)
 
-    for boundary in element_boundaries:
+  visible_elements = []
+
+  for boundary in element_boundaries:
     # subimage is too small for consideration
-      if boundary['w'] * boundary['h'] < granularity:
-        continue
+    if boundary['w'] * boundary['h'] < granularity:
+      continue
 
-      subimage = extract_subimage_from_image(image, boundary)
+    subimage = extract_subimage_from_image(image, boundary, buffer_pixels)
 
     # TODO : tune this value
-      std_dev = standard_deviation_of_image(subimage) 
-      if std_dev is not None and standard_deviation_of_image(subimage) < 3:
-        continue
 
-      metadata = extract_contextual_metadata_from_image(subimage)
+    std_dev = standard_deviation_of_image(subimage)
+    if std_dev is not None and standard_deviation_of_image(
+        subimage) < std_dev_threshold:
+      continue
 
-      boundary['metadata'] = metadata
-      filename = generate_unique_filename(metadata, unique_image_seed)
+    metadata = extract_contextual_metadata_from_image(subimage)
 
-      boundary['image'] = os.path.join(assets_output_path, filename)
-      write_image_to_file(subimage,
+    boundary['metadata'] = metadata
+    filename = generate_unique_filename(metadata, unique_image_seed)
+
+    boundary['image'] = os.path.join(assets_output_path, filename)
+    write_image_to_file(subimage,
                         assets_output_path=assets_output_path,
                         filename=filename)
-      visible_elements.append(boundary)
+    visible_elements.append(boundary)
 
-    return visible_elements
+  return visible_elements
+
 
 class Extractor:
   """Interface to extract elements from a source"""
@@ -200,7 +213,9 @@ class Extractor:
 
     print(f"Window size set to: {self.driver.get_window_size()}")
     print(f"CSS Window size: {self.css_width}x{self.css_height}, DPR: {dpr}")
-    print(f"Actual screenshot size might be: {self.actual_width}x{self.actual_height}")
+    print(
+        f"Actual screenshot size might be: {self.actual_width}x{self.actual_height}"
+    )
 
   def set_render_path(self, render_path):
     self.render_path = render_path
@@ -219,7 +234,8 @@ class Extractor:
     image = self.screenshot()
 
     # Calculate the new size, intended to be the actual dimensions of the screenshot
-    new_size = (self.css_width, self.css_height)  # This now does not divide by the dpr
+    new_size = (self.css_width, self.css_height
+                )  # This now does not divide by the dpr
     print("Resizing screenshot to match css dimensions", new_size)
 
     # Resize the image to the new size
@@ -261,16 +277,18 @@ class Extractor:
 
   def get_visible_elements_by_screenshot(self,
                                          assets_output_path='./site/assets',
-                                         granularity=20, screenshot=None):
+                                         granularity=20,
+                                         screenshot_file=None):
     """Get interactive elements that are visible by screenshot parsing strategy."""
 
     if not os.path.exists(assets_output_path):
       os.makedirs(assets_output_path)
 
-    if screenshot is None:
-      screenshot = self.screenshot_and_rescale()
+    if screenshot_file is None:
+      screenshot_file = self.screenshot_and_rescale()
 
-    return parse_image_boundaries(assets_output_path, granularity, screenshot)
+    return parse_image_boundaries(assets_output_path, granularity,
+                                  screenshot_file)
 
   def close_driver(self):
     self.driver.quit()
