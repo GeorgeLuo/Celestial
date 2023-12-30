@@ -28,21 +28,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "stopCapture":
       if (isCapturing) {
-        // Set the label in the captureSession object
-        captureSession.label = request.label;
+        captureSession.label = request.label || captureSession.label;
         // Send message to content.js to stop capturing
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
           let activeTab = tabs[0];
           chrome.tabs.sendMessage(activeTab.id, { action: "stopCapture" }, function (response) {
             if (response && response.status === 'capture stopped') {
               captureSession.endTime = new Date().toISOString();
-              // Now, save the completed capture session with the label before resetting it
-              chrome.storage.local.set({ 'captureSession': captureSession }, function () {
-                console.log('Capture session saved:', captureSession);
-                // Reset the captureSession after ensuring it's saved
-                isCapturing = false;
-                captureSession = { startTime: null, endTime: null, tabDimensions: {}, events: [] };
-                sendResponse({ status: 'capture ended', session: captureSession });
+              // Fetch the existing captureSessions array, add the new session to it, and save it back
+              chrome.storage.local.get({ captureSessions: [] }, function (result) {
+                let sessions = result.captureSessions;
+                sessions.push(captureSession);
+                chrome.storage.local.set({ captureSessions: sessions }, function () {
+                  console.log('Capture sessions saved:', sessions);
+                  // Reset the captureSession after ensuring it's saved
+                  isCapturing = false;
+                  captureSession = { startTime: null, endTime: null, tabDimensions: {}, events: [] };
+                  sendResponse({ status: 'capture ended', session: captureSession });
+                });
               });
             }
           });

@@ -1,6 +1,7 @@
 <!-- popup.html -->
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>User Flow Capture</title>
   <style>
@@ -8,11 +9,14 @@
       display: flex;
       margin-bottom: 5px;
     }
+
     #buttons button {
-      margin-right: 5px; /* Adds a small space between the buttons */
+      margin-right: 5px;
+      /* Adds a small space between the buttons */
     }
   </style>
 </head>
+
 <body>
   <div id="buttons">
     <button id="startCapture">Start Capture</button>
@@ -20,6 +24,16 @@
   </div>
   <!-- Text field to label the current flow with default value as the title of the tab -->
   <input type="text" id="flowLabel" placeholder="">
+  <div id="capturedFlowsDropdown">
+    <label for="flowsSelect">Select a captured flow:</label>
+    <select id="flowsSelect">
+      <!-- Options will be dynamically populated here -->
+    </select>
+  </div>
+  <div id="flowDetails">
+    <!-- Flow metadata will be displayed here -->
+  </div>
   <script src="popup.js"></script>
 </body>
+
 </html>
