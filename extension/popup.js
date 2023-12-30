@@ -1,42 +1,41 @@
-document.getElementById('startCapture').addEventListener('click', function() {
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+document.getElementById('startCapture').addEventListener('click', function () {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
-    chrome.runtime.sendMessage({action: "startCapture", tabId: activeTab.id});
+    chrome.runtime.sendMessage({ action: "startCapture", tabId: activeTab.id });
   });
 });
 
-document.getElementById('stopCapture').addEventListener('click', function() {
+document.getElementById('stopCapture').addEventListener('click', function () {
   let flowLabelField = document.getElementById('flowLabel');
   let labelValue = flowLabelField.value || flowLabelField.placeholder;
 
-  chrome.runtime.sendMessage({action: "stopCapture", label: labelValue}, function(response) {
+  chrome.runtime.sendMessage({ action: "stopCapture", label: labelValue }, function (response) {
     if (response && response.status === 'capture ended') {
       console.log('Capture stopped successfully');
+      populateCapturedFlowsDropdown();
     } else {
       console.error('Failed to stop capture');
     }
   });
 });
 
-// Function to populate the dropdown with captured user flow metadata
 function populateCapturedFlowsDropdown() {
-  chrome.storage.local.get(['captureSessions'], function(result) {
+  chrome.storage.local.get(['captureSessions'], function (result) {
     var capturedFlows = result.captureSessions || [];
     var selectElement = document.getElementById('flowsSelect');
-    selectElement.innerHTML = ''; // Clear existing options if any
+    selectElement.innerHTML = '';
 
-    capturedFlows.forEach(function(session, index) {
+    capturedFlows.forEach(function (session, index) {
       var optionElement = document.createElement('option');
       optionElement.value = index;
       optionElement.textContent = session.label || `Flow ${index + 1}`;
       selectElement.appendChild(optionElement);
     });
-    
-    // Listen for changes on the dropdown to display the selected flow's details
-    selectElement.addEventListener('change', function() {
+
+    selectElement.addEventListener('change', function () {
       var selectedIndex = selectElement.options[selectElement.selectedIndex].value;
       var selectedFlow = capturedFlows[selectedIndex];
-      
+
       if (selectedFlow) {
         document.getElementById('flowDetails').textContent = JSON.stringify(selectedFlow, null, 2);
       } else {
@@ -46,14 +45,31 @@ function populateCapturedFlowsDropdown() {
   });
 }
 
-// Call the function to populate the dropdown when the popup is opened
 document.addEventListener('DOMContentLoaded', populateCapturedFlowsDropdown);
 
-// Code remains unchanged below
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   let labelField = document.getElementById('flowLabel');
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let currentTab = tabs[0];
     labelField.placeholder = currentTab.title;
+  });
+});
+
+// Add this at the end of popup.js
+
+function downloadObjectAsJson(exportObj, exportName) {
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+  var downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute("href", dataStr);
+  downloadAnchorNode.setAttribute("download", exportName + ".json");
+  document.body.appendChild(downloadAnchorNode); // required for firefox
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
+}
+
+document.getElementById('exportFlows').addEventListener('click', function () {
+  chrome.storage.local.get(['captureSessions'], function (result) {
+    var capturedFlows = result.captureSessions || [];
+    downloadObjectAsJson(capturedFlows, 'capturedFlows');
   });
 });

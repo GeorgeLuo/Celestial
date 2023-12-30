@@ -64,6 +64,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       }
       break;
+    case "logInput":
+      if (isCapturing) {
+        // Append the input event with the time and text sent into the capture session
+        captureSession.events.push({
+          type: "input",
+          value: request.value,
+          time: new Date().toISOString()
+        });
+      }
   }
   return true;
 });
