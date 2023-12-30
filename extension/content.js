@@ -16,20 +16,19 @@ function handleDocumentClick(event) {
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log('Message received in content.js:', request.action); // Log to verify the function is called
+  console.log('Message received in content.js:', request.action);
   switch (request.action) {
     case "startCapture":
       capturing = true;
-      console.log('Capturing started', capturing);  // Log to verify capturing is true
+      console.log('Capturing started', capturing);
       document.addEventListener('click', handleDocumentClick);
-      console.log('Click event listener added'); // Log to verify event listener is added
+      console.log('Click event listener added');
       break;
     case "stopCapture":
       capturing = false;
       document.removeEventListener('click', handleDocumentClick);
       sendResponse({ status: 'capture stopped' });
-      console.log('Capturing stopped', capturing);  // Log to verify capturing is false
+      console.log('Capturing stopped', capturing);
       break;
-    // Other cases...
   }
 });

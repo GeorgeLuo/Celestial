@@ -55,8 +55,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       }
       break;
-    // ... (the rest of your switch cases)
   }
-  // Returning true is necessary when sendResponse will be called asynchronously
   return true;
 });
