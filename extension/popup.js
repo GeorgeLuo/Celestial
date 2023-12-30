@@ -1,4 +1,3 @@
-console.log("popup");
 document.getElementById('startCapture').addEventListener('click', function() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     let activeTab = tabs[0];
