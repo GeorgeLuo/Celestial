@@ -5,7 +5,6 @@ let capturing = false;
 
 function handleDocumentClick(event) {
   if (capturing) {
-    console.log('clicked');
     // Send the click coordinates to the background script
     chrome.runtime.sendMessage({
       action: "logClick",
