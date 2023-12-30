@@ -1,9 +1,11 @@
 // background.js
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === "capture") {
+  if (request.action === "startCapture") {
+    console.log('Capture started');
+  } else if (request.action === "stopCapture") {
+    console.log('Capture stopped');
+  } else if (request.action === "capture") {
     chrome.tabs.captureVisibleTab(null, {}, function(dataUrl) {
-      // Save the dataUrl or do something with it here
-      // For example, send it back to the popup.js or content.js
     });
   }
 });
