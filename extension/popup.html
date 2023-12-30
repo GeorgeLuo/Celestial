@@ -3,10 +3,23 @@
 <html>
 <head>
   <title>User Flow Capture</title>
+  <style>
+    #buttons {
+      display: flex;
+      margin-bottom: 5px;
+    }
+    #buttons button {
+      margin-right: 5px; /* Adds a small space between the buttons */
+    }
+  </style>
 </head>
 <body>
-  <button id="startCapture">Start Capture</button>
-  <button id="stopCapture">Stop Capture</button>
+  <div id="buttons">
+    <button id="startCapture">Start Capture</button>
+    <button id="stopCapture">Stop Capture</button>
+  </div>
+  <!-- Text field to label the current flow with default value as the title of the tab -->
+  <input type="text" id="flowLabel" placeholder="">
   <script src="popup.js"></script>
 </body>
 </html>

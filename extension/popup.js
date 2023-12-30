@@ -14,3 +14,12 @@ document.getElementById('stopCapture').addEventListener('click', function() {
     }
   });
 });
+
+// Code below remains unchanged
+document.addEventListener('DOMContentLoaded', function() {
+  let labelField = document.getElementById('flowLabel');
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      let currentTab = tabs[0];
+      labelField.placeholder = currentTab.title;
+  });
+});
