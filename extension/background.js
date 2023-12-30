@@ -1,56 +1,62 @@
-// background.js - rewritten for Manifest V3
+// Define a state variable to track the capturing status
+let isCapturing = false;
 
-let captureMetadata = { start: null, stop: null, windowSize: {} };
-
-function setWindowSize(tabId, callback) {
-  chrome.tabs.get(tabId, (tab) => {
-    captureMetadata.windowSize = { width: tab.width, height: tab.height };
-    if (typeof callback === 'function') {
-      callback();
-    }
-  });
-}
-
-function captureTab(tabId) {
-  captureMetadata.start = new Date();
-  setWindowSize(tabId, () => {});
-}
+// Define the captureSession data structure to store session information
+let captureSession = {
+  startTime: null,
+  endTime: null,
+  tabDimensions: {},
+  events: []
+};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "startCapture") {
-    captureMetadata.start = Date.now();
-    if (sender.tab) {
-      captureTab(sender.tab.id);
-      sendResponse({ status: 'capture started' });
-    }
-  } else if (request.action === "stopCapture") {
-    captureMetadata.stop = Date.now();
-    if (sender.tab) {
-      const currentTabID = sender.tab.id;
-      if (!captureMetadata.windowSize.width || !captureMetadata.windowSize.height) {
-        setWindowSize(currentTabID, () => {
-          try {
-            chrome.tabs.captureVisibleTab(
-              chrome.windows.WINDOW_ID_CURRENT, 
-              { format: 'png' },
-              (dataUrl) => {}
-            );
-          } catch (error) {
-            console.error(error);
-          }
+  switch (request.action) {
+    case "startCapture":
+      isCapturing = true;
+      console.log('startCapture');
+      // Save the start time and tab dimensions
+      captureSession.startTime = new Date().toISOString();
+      chrome.tabs.get(request.tabId, function(tab) {
+        captureSession.tabDimensions = {
+          width: tab.width,
+          height: tab.height
+        };
+        // Send message to content.js to start capturing
+        chrome.tabs.sendMessage(tab.id, { action: "startCapture" });
+      });
+      break;
+    case "stopCapture":
+      if(isCapturing) {
+        // Send message to content.js to stop capturing
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+          let activeTab = tabs[0];
+          chrome.tabs.sendMessage(activeTab.id, { action: "stopCapture" }, function(response) {
+            if (response && response.status === 'capture stopped') {
+              captureSession.endTime = new Date().toISOString();
+              console.log('Capture stopped:', captureSession);
+              sendResponse({ status: 'capture ended', session: captureSession });
+              // After stopping the capture, reset the captureSession
+              isCapturing = false;
+              captureSession = { startTime: null, endTime: null, tabDimensions: {}, events: [] };
+            }
+          });
         });
       } else {
-        try {
-          chrome.tabs.captureVisibleTab(
-            chrome.windows.WINDOW_ID_CURRENT, 
-            { format: 'png' },
-            (dataUrl) => {}
-          );
-        } catch (error) {
-          console.error(error);
-        }
+        console.log('No active capturing session to stop.');
       }
-    }
-    sendResponse({ status: 'capture ended', metadata: captureMetadata });
+      break;
+    case "logClick":
+      if (isCapturing) {
+        // Push the click event coordinates into the capture session
+        captureSession.events.push({
+          x: request.x,
+          y: request.y,
+          time: new Date().toISOString()
+        });
+      }
+      break;
+    // ... (the rest of your switch cases)
   }
+  // Returning true is necessary when sendResponse will be called asynchronously
+  return true;
 });
