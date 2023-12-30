@@ -1,13 +1,9 @@
-// background.js
+// background.js - rewritten for Manifest V3
+
 let captureMetadata = { start: null, stop: null, windowSize: {} };
 
 function setWindowSize(tabId, callback) {
-  chrome.tabs.get(tabId, function(tab) {
-    if (chrome.runtime.lastError) {
-      // Log the error
-      console.error('Error retrieving the tab:', chrome.runtime.lastError);
-      return;
-    }
+  chrome.tabs.get(tabId, (tab) => {
     captureMetadata.windowSize = { width: tab.width, height: tab.height };
     if (typeof callback === 'function') {
       callback();
@@ -15,39 +11,46 @@ function setWindowSize(tabId, callback) {
   });
 }
 
-// This function will be called by the popup script.
 function captureTab(tabId) {
   captureMetadata.start = new Date();
-
-  setWindowSize(tabId, function() {
-  });
+  setWindowSize(tabId, () => {});
 }
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('Message received:', request); // This should log any incoming message
-
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "startCapture") {
-    if (request.tabId) {
-      // The tab ID is sent from popup.js, use it directly
-      captureTab(request.tabId);
-    } else if (sender.tab) {
-      // The tab ID was not sent from popup.js, so get it from sender.tab
+    captureMetadata.start = Date.now();
+    if (sender.tab) {
       captureTab(sender.tab.id);
+      sendResponse({ status: 'capture started' });
     }
   } else if (request.action === "stopCapture") {
-    captureMetadata.stop = new Date();
-    if (sender.tab || request.tabId) {
-      const currentTabID = sender.tab ? sender.tab.id : request.tabId; 
+    captureMetadata.stop = Date.now();
+    if (sender.tab) {
+      const currentTabID = sender.tab.id;
       if (!captureMetadata.windowSize.width || !captureMetadata.windowSize.height) {
-        setWindowSize(currentTabID, function() {
-          chrome.tabs.captureVisibleTab(null, {}, function(dataUrl) {
-          });
+        setWindowSize(currentTabID, () => {
+          try {
+            chrome.tabs.captureVisibleTab(
+              chrome.windows.WINDOW_ID_CURRENT, 
+              { format: 'png' },
+              (dataUrl) => {}
+            );
+          } catch (error) {
+            console.error(error);
+          }
         });
       } else {
-        chrome.tabs.captureVisibleTab(null, {}, function(dataUrl) {
-        });
+        try {
+          chrome.tabs.captureVisibleTab(
+            chrome.windows.WINDOW_ID_CURRENT, 
+            { format: 'png' },
+            (dataUrl) => {}
+          );
+        } catch (error) {
+          console.error(error);
+        }
       }
     }
-    console.log(captureMetadata);
+    sendResponse({ status: 'capture ended', metadata: captureMetadata });
   }
 });
