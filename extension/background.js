@@ -60,7 +60,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       break;
     case "logClick":
-      console.log(isCapturing);
       if (isCapturing) {
         // Push the click event coordinates into the capture session
         captureSession.events.push({
