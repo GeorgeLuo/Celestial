@@ -1,11 +1,14 @@
 // Define a state variable to track the capturing status
 let isCapturing = false;
 
+let knownUrl = "";
+
 // Define the captureSession data structure to store session information
 let captureSession = {
   startTime: null,
   endTime: null,
   label: "", // Added label to captureSession
+  startUrl: "", // Added startUrl to captureSession
   tabDimensions: {},
   events: []
 };
@@ -22,6 +25,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           width: tab.width,
           height: tab.height
         };
+        captureSession.startUrl = tab.url;
+        knownUrl = tab.url;
         // Send message to content.js to start capturing
         chrome.tabs.sendMessage(tab.id, { action: "startCapture" });
       });
@@ -43,7 +48,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   console.log('Capture sessions saved:', sessions);
                   // Reset the captureSession after ensuring it's saved
                   isCapturing = false;
-                  captureSession = { startTime: null, endTime: null, tabDimensions: {}, events: [] };
+                  captureSession = { startTime: null, endTime: null, tabDimensions: {}, startUrl: "", events: [] };
                   sendResponse({ status: 'capture ended', session: captureSession });
                 });
               });
@@ -55,12 +60,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       break;
     case "logClick":
+      console.log(isCapturing);
       if (isCapturing) {
         // Push the click event coordinates into the capture session
         captureSession.events.push({
+          type: "click",
           x: request.x,
           y: request.y,
-          time: new Date().toISOString()
+          time: request.time
         });
       }
       break;
@@ -70,9 +77,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         captureSession.events.push({
           type: "input",
           value: request.value,
-          time: new Date().toISOString()
+          time: request.time
         });
       }
+      break;
+    case "contentReloaded":
+      if (isCapturing) {
+        if (knownUrl !== request.currentUrl) {
+          captureSession.events.push({
+            type: "urlChange",
+            value: request.currentUrl,
+            time: request.time
+          });
+          knownUrl = request.currentUrl;
+        }
+      }
+      break;
+    case "logClickBeforeUnload":
+      console.log('logClickBeforeUnload event:', request);
+      if (isCapturing) {
+        // Check if the last event in captureSession.events is the same as the pending click
+        const lastEvent = captureSession.events[captureSession.events.length - 1];
+        if (!lastEvent || lastEvent.time !== request.time) {
+          captureSession.events.push({
+            x: request.x,
+            y: request.y,
+            time: request.time,
+            type: "clickBeforeUnload"
+          });
+        }
+      }
+      break;
+    case "checkCapturing":
+      sendResponse({ isCapturing: isCapturing });
+      break;
   }
   return true;
 });
