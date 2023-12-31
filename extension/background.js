@@ -76,7 +76,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         captureSession.events.push({
           type: "input",
           value: request.value,
-          time: request.time
+          time: request.time,
+          // enterPressed: request.enterPressed
         });
       }
       break;
@@ -92,8 +93,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
       break;
-    case "logClickBeforeUnload":
-      console.log('logClickBeforeUnload event:', request);
+    case "eventBeforeUnload":
+      console.log('eventBeforeUnload event:', request);
       if (isCapturing) {
         // Check if the last event in captureSession.events is the same as the pending click
         const lastEvent = captureSession.events[captureSession.events.length - 1];
@@ -102,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             x: request.x,
             y: request.y,
             time: request.time,
-            type: "clickBeforeUnload"
+            type: "eventBeforeUnload"
           });
         }
       }

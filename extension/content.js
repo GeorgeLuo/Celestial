@@ -11,12 +11,10 @@ chrome.runtime.sendMessage({ action: 'checkCapturing' }, function (response) {
   capturing = response.isCapturing;
   if (capturing) {
     console.log('Content script reinitialized and capturing is active.');
-    // Re-add event listeners if capturing is true
     document.addEventListener('click', handleDocumentClick);
-    document.addEventListener('input', handleTextInput, true);
+    document.addEventListener('keydown', handleTextInput, true);
   }
 });
-
 
 function handleDocumentClick(event) {
   if (capturing) {
@@ -36,17 +34,16 @@ window.addEventListener('beforeunload', function (event) {
   // If there is a pending click, send it
   console.log('beforeunload: Preparing to send pending click:', pendingClick);
   if (pendingClick) {
-    chrome.runtime.sendMessage({ ...pendingClick, action: "logClickBeforeUnload" });
+    chrome.runtime.sendMessage({ ...pendingClick, action: "eventBeforeUnload" });
     pendingClick = null; // Clear the pending click
   }
 }, false);
 
-// Function to track input events on text fields
 function handleTextInput(event) {
   if (capturing) {
     chrome.runtime.sendMessage({
       action: "logInput",
-      value: event.target.value,
+      value: event.key,
       time: new Date().toISOString()
     });
   }
@@ -60,20 +57,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       // Add listeners for click and input events when capture starts
       console.log('Capturing started', capturing);
       document.addEventListener('click', handleDocumentClick);
-      document.addEventListener('input', handleTextInput, true); // Use event delegation for dynamic inputs
+      document.addEventListener('keydown', handleTextInput, true);
       console.log('Event listeners added');
       break;
     case "stopCapture":
       capturing = false;
       // Remove listeners for click and input events when capture stops
       document.removeEventListener('click', handleDocumentClick);
-      document.removeEventListener('input', handleTextInput, true);
+      document.addEventListener('keydown', handleTextInput, true);
       sendResponse({ status: 'capture stopped' });
       console.log('Capturing stopped', capturing);
       break;
   }
 });
-
-// Ensure to add the input event listener only once and use event delegation to handle dynamic inputs
-// This will also take care of any new inputs added to the DOM after the initial page load
-document.documentElement.addEventListener('input', handleTextInput, true);
