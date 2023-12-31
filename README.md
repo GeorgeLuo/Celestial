@@ -11,3 +11,9 @@ By converting interfaces from xml-like representations to positions in space, we
 ### Models
 
 #### Find rectangles
+
+### Extension
+
+The extension defines a tool used to capture user flows. Note this will only work for webpages and not chrome settings pages. The extension handles one session recording at a time across changes in url of a single tab. 
+
+Usage outside of this is not tested and will be unstable. For example, starting from the google search page, typing characters in the search box and clicking the standard search buttons will log the coordinates and input text for the commands along with a timestamp. Additionally, metadata such as url changes are captured.
