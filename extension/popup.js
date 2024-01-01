@@ -55,8 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// Add this at the end of popup.js
-
 function downloadObjectAsJson(exportObj, exportName) {
   var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
   var downloadAnchorNode = document.createElement('a');
@@ -71,5 +69,30 @@ document.getElementById('exportFlows').addEventListener('click', function () {
   chrome.storage.local.get(['captureSessions'], function (result) {
     var capturedFlows = result.captureSessions || [];
     downloadObjectAsJson(capturedFlows, 'capturedFlows');
+  });
+});
+
+// Other parts of popup.js remain unmodified, only the relevant changes are shown below
+
+document.addEventListener('DOMContentLoaded', function () {
+  console.log('adding replayFlow listener')
+  var replayButton = document.getElementById('replayFlow');
+  replayButton.addEventListener('click', function () {
+    console.log('replayFlow');
+    var selectedFlowIndex = document.getElementById('flowsSelect').value;
+    chrome.storage.local.get(['captureSessions'], function (result) {
+      var capturedFlows = result.captureSessions || [];
+      var selectedFlow = capturedFlows[selectedFlowIndex];
+      if (selectedFlow) {
+        console.log(selectedFlow);
+        // We have the target flow, now send it to the `content.js`
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          let activeTab = tabs[0];
+          chrome.tabs.sendMessage(activeTab.id, { action: "replayFlow", flowData: selectedFlow });
+        });
+      } else {
+        console.error('Selected flow index is not valid.');
+      }
+    });
   });
 });
