@@ -2,7 +2,7 @@
 console.log('content.js loaded and running');
 
 let capturing = false;
-let pendingClick = null;
+let pendingEvent = null;
 
 chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.location.href, time: new Date().toISOString() });
 
@@ -11,8 +11,7 @@ chrome.runtime.sendMessage({ action: 'checkCapturing' }, function (response) {
   capturing = response.isCapturing;
   if (capturing) {
     console.log('Content script reinitialized and capturing is active.');
-    document.addEventListener('mousedown', handleDocumentClick);
-    document.addEventListener('keydown', handleTextInput, true);
+    enableCaptureListeners();
   }
 });
 
@@ -20,39 +19,39 @@ function handleDocumentClick(event) {
   console.log('handleDocumentClick called'); // Debugging line
   if (capturing) {
     console.log('Capturing click at:', event.clientX, event.clientY); // Another debugging line
-    pendingClick = {
+    pendingEvent = {
       action: "logClick",
       x: event.clientX,
       y: event.clientY,
       time: new Date().toISOString() // Log the time to resolve any race conditions later
     };
-    chrome.runtime.sendMessage(pendingClick);
+    chrome.runtime.sendMessage(pendingEvent);
+  }
+}
+
+function handleTextInput(event) {
+  if (capturing) {
+    pendingEvent = {
+      action: "logInput",
+      value: event.key,
+      time: new Date().toISOString()
+    };
+    chrome.runtime.sendMessage(pendingEvent);
   }
 }
 
 // Add beforeunload event listener to ensure pending click is sent before navigation
 window.addEventListener('beforeunload', function (event) {
-  if (pendingClick) {
-    chrome.runtime.sendMessage({ ...pendingClick, action: "eventBeforeUnload" });
-    pendingClick = null;
+  if (pendingEvent) {
+    chrome.runtime.sendMessage({ ...pendingEvent, action: "eventBeforeUnload", eventBeforeUnload: true });
+    pendingEvent = null;
   }
 }, false);
-
-function handleTextInput(event) {
-  if (capturing) {
-    chrome.runtime.sendMessage({
-      action: "logInput",
-      value: event.key,
-      time: new Date().toISOString()
-    });
-  }
-}
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "startCapture") {
     capturing = true;
-    document.addEventListener('mousedown', handleDocumentClick);
-    document.addEventListener('keydown', handleTextInput, true);
+    enableCaptureListeners();
   } else if (request.action === "stopCapture") {
     capturing = false;
     document.removeEventListener('mousedown', handleDocumentClick);
@@ -63,6 +62,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     replayFlow(request.flowData);
   }
 });
+
+function enableCaptureListeners() {
+  document.addEventListener('mousedown', handleDocumentClick);
+  document.addEventListener('keydown', handleTextInput, true);
+}
 
 function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
@@ -75,12 +79,12 @@ function replayFlow(flow) {
       } else if (event.type === 'input') {
         simulateInput(event.value);
       }
-      
+
       // If there are more events, call the next event
       if (index < flow.events.length - 1) {
         executeEvent(flow.events[index + 1], index + 1);
       }
-    }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
+    }, 333); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
   }
   // Start executing the first event after a delay to allow page load
   if (flow.events.length > 0) {
@@ -102,14 +106,32 @@ function simulateClick(x, y) {
     // If the element is focusable, focus it to ensure cursor appears
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.focus();
-    } 
+    }
   }
 }
 
 function simulateInput(value) {
   console.log('simulateInput', value);
-  // Send the string to the currently active/focused element
   const activeElement = document.activeElement;
+  if (value.length > 1) {
+    console.log("length > 1");
+    if (value === "Enter") {
+      console.log("value is enter");
+      if (activeElement) {
+        console.log("sending enter");
+        const event = new KeyboardEvent('keydown', {
+          code: 'Enter',
+          key: 'Enter',
+          charCode: 13,
+          keyCode: 13,
+          view: window,
+          bubbles: true
+        });
+        activeElement.dispatchEvent(event);
+      }
+    }
+  } else
+  // Send the string to the currently active/focused element
   if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
     // Append the incoming string to the existing content
     activeElement.value += value;

@@ -14,6 +14,22 @@ let captureSession = {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if(request.eventBeforeUnload) {
+    console.log('eventBeforeUnload event:', request);
+    if (isCapturing) {
+      // Check if the last event in captureSession.events is the same as the pending click
+      const lastEvent = captureSession.events[captureSession.events.length - 1];
+      if (!lastEvent || lastEvent.time !== request.time) {
+        captureSession.events.push({
+          x: request.x,
+          y: request.y,
+          time: request.time,
+          type: request.type
+        });
+      }
+    }
+    return
+  }
   switch (request.action) {
     case "startCapture":
       isCapturing = true;
@@ -60,7 +76,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       break;
     case "logClick":
-      console.log('click')
       if (isCapturing) {
         // Push the click event coordinates into the capture session
         captureSession.events.push({
