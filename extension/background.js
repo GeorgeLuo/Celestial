@@ -112,6 +112,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "checkCapturing":
       sendResponse({ isCapturing: isCapturing });
       break;
+    case "replayFlow":
+      // start replaying the flow in the active tab
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        let activeTab = tabs[0];
+        chrome.tabs.sendMessage(activeTab.id, { action: "replayFlow", flowData: request.flowData }, function (response) {
+          // you can also carry out any necessary message passing or logic with the response here
+        });
+      });
+      // Optionally, return a response message
+      sendResponse({ replayStarted: true });
+      break;
   }
   return true;
 });
