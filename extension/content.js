@@ -2,16 +2,21 @@
 console.log('content.js loaded and running');
 
 let capturing = false;
+let replaying = false;
 let pendingEvent = null;
 
 chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.location.href, time: new Date().toISOString() });
 
 // Ask the background page if it's currently capturing
-chrome.runtime.sendMessage({ action: 'checkCapturing' }, function (response) {
+chrome.runtime.sendMessage({ action: 'checkState' }, function (response) {
   capturing = response.isCapturing;
+  replaying = response.isReplaying;
   if (capturing) {
     console.log('Content script reinitialized and capturing is active.');
     enableCaptureListeners();
+  }
+  if (replaying) {
+    console.log('Content script reinitialized and replaying is active.');
   }
 });
 
@@ -43,7 +48,7 @@ function handleTextInput(event) {
 // Add beforeunload event listener to ensure pending click is sent before navigation
 window.addEventListener('beforeunload', function (event) {
   if (pendingEvent) {
-    chrome.runtime.sendMessage({ ...pendingEvent, action: "eventBeforeUnload", eventBeforeUnload: true });
+    chrome.runtime.sendMessage({ ...pendingEvent, eventBeforeUnload: true });
     pendingEvent = null;
   }
 }, false);
@@ -83,6 +88,9 @@ function replayFlow(flow) {
       // If there are more events, call the next event
       if (index < flow.events.length - 1) {
         executeEvent(flow.events[index + 1], index + 1);
+      } else {
+        console.log("sending end replay");
+        chrome.runtime.sendMessage({ action: "endReplay", type: "notification" });
       }
     }, 333); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
   }
@@ -114,11 +122,8 @@ function simulateInput(value) {
   console.log('simulateInput', value);
   const activeElement = document.activeElement;
   if (value.length > 1) {
-    console.log("length > 1");
     if (value === "Enter") {
-      console.log("value is enter");
       if (activeElement) {
-        console.log("sending enter");
         const event = new KeyboardEvent('keydown', {
           code: 'Enter',
           key: 'Enter',
@@ -131,14 +136,14 @@ function simulateInput(value) {
       }
     }
   } else
-  // Send the string to the currently active/focused element
-  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-    // Append the incoming string to the existing content
-    activeElement.value += value;
-    // Dispatch the input event to trigger change handlers on the element
-    const event = new Event('input', { bubbles: true });
-    activeElement.dispatchEvent(event);
-  } else {
-    console.warn('simulateInput: No input field focused.');
-  }
+    // Send the string to the currently active/focused element
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+      // Append the incoming string to the existing content
+      activeElement.value += value;
+      // Dispatch the input event to trigger change handlers on the element
+      const event = new Event('input', { bubbles: true });
+      activeElement.dispatchEvent(event);
+    } else {
+      console.warn('simulateInput: No input field focused.');
+    }
 }

@@ -1,5 +1,6 @@
 // Define a state variable to track the capturing status
 let isCapturing = false;
+let isReplaying = false;
 
 let knownUrl = "";
 
@@ -124,11 +125,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
       break;
-    case "checkCapturing":
-      sendResponse({ isCapturing: isCapturing });
+    case "checkState":
+      sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
       break;
     case "replayFlow":
       // start replaying the flow in the active tab
+      replayFlow = true;
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         let activeTab = tabs[0];
         chrome.tabs.sendMessage(activeTab.id, { action: "replayFlow", flowData: request.flowData }, function (response) {
@@ -137,6 +139,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       // Optionally, return a response message
       sendResponse({ replayStarted: true });
+      break;
+    case "endReplay":
+      console.log("endPlay");
+      replayFlow = false;
+      sendResponse({ replayEnded: true });
       break;
   }
   return true;
