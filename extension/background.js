@@ -15,7 +15,7 @@ let captureSession = {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if(request.eventBeforeUnload) {
+  if (request.eventBeforeUnload) {
     console.log('eventBeforeUnload event:', request);
     if (isCapturing) {
       // Check if the last event in captureSession.events is the same as the pending click
@@ -76,26 +76,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log('No active capturing session to stop.');
       }
       break;
-    case "logClick":
+    case "captureEvent":
       if (isCapturing) {
-        // Push the click event coordinates into the capture session
-        captureSession.events.push({
-          type: "click",
-          x: request.x,
-          y: request.y,
-          time: request.time
-        });
-      }
-      break;
-    case "logInput":
-      if (isCapturing) {
-        // Append the input event with the time and text sent into the capture session
-        captureSession.events.push({
-          type: "input",
-          value: request.value,
-          time: request.time,
-          // enterPressed: request.enterPressed
-        });
+        switch (request.opType) {
+          case "click":
+            captureSession.events.push({
+              type: "click",
+              x: request.x,
+              y: request.y,
+              time: request.time
+            });
+            break;
+          case "input":
+            captureSession.events.push({
+              type: "input",
+              value: request.value,
+              time: request.time
+            });
+            break;
+        }
       }
       break;
     case "contentReloaded":

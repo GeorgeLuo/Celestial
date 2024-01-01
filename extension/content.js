@@ -25,7 +25,8 @@ function handleDocumentClick(event) {
   if (capturing) {
     console.log('Capturing click at:', event.clientX, event.clientY); // Another debugging line
     pendingEvent = {
-      action: "logClick",
+      action: "captureEvent",
+      opType: "click",
       x: event.clientX,
       y: event.clientY,
       time: new Date().toISOString() // Log the time to resolve any race conditions later
@@ -37,7 +38,8 @@ function handleDocumentClick(event) {
 function handleTextInput(event) {
   if (capturing) {
     pendingEvent = {
-      action: "logInput",
+      action: "captureEvent",
+      opType: "input",
       value: event.key,
       time: new Date().toISOString()
     };
