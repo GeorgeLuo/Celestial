@@ -130,7 +130,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "replayFlow":
       // start replaying the flow in the active tab
-      replayFlow = true;
+      isReplaying = true;
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         let activeTab = tabs[0];
         chrome.tabs.sendMessage(activeTab.id, { action: "replayFlow", flowData: request.flowData }, function (response) {
@@ -141,7 +141,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ replayStarted: true });
       break;
     case "endReplay":
-      console.log("endPlay");
       replayFlow = false;
       sendResponse({ replayEnded: true });
       break;
