@@ -18,25 +18,27 @@ function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
-    chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function (tab) {
-      if (tab) {
-        function sendEvent(event, index) {
-          setTimeout(() => {
-            chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
+    chrome.windows.update(activeTab.windowId, { width: flow.tabDimensions.width, height: flow.tabDimensions.height }, function () {
+      chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function (tab) {
+        if (tab) {
+          function sendEvent(event, index) {
+            setTimeout(() => {
+              chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
 
-            // If there are more events, call the next event
-            if (index < flow.events.length - 1) {
-              sendEvent(flow.events[index + 1], index + 1);
-            } else {
-              isReplaying = false;
-            }
-          }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
+              // If there are more events, call the next event
+              if (index < flow.events.length - 1) {
+                sendEvent(flow.events[index + 1], index + 1);
+              } else {
+                isReplaying = false;
+              }
+            }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
+          }
+          // Start executing the first event after a delay to allow page load
+          if (flow.events.length > 0) {
+            sendEvent(flow.events[0], 0);
+          }
         }
-        // Start executing the first event after a delay to allow page load
-        if (flow.events.length > 0) {
-          sendEvent(flow.events[0], 0);
-        }
-      }
+      });
     });
   });
 }
