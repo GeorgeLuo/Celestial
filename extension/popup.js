@@ -48,6 +48,20 @@ document.getElementById('exportFlows').addEventListener('click', function () {
   });
 });
 
+document.getElementById('analyzeFlow').addEventListener('click', function () {
+  var selectedFlowIndex = document.getElementById('flowsSelect').value;
+  chrome.storage.local.get(['captureSessions'], function (result) {
+    var capturedFlows = result.captureSessions || [];
+    var selectedFlow = capturedFlows[selectedFlowIndex];
+    if (selectedFlow) {
+      localStorage.setItem('selectedFlowData', JSON.stringify(selectedFlow));
+      var newWindow = window.open("analyzeFlow.html", "Flow Analysis Window", "width=600, height=400");
+    } else {
+      console.error('Selected flow index is not valid.');
+    }
+  });
+});
+
 document.getElementById('clearFlows').addEventListener('click', function () {
   chrome.storage.local.remove(['captureSessions'], function () {
     populateCapturedFlowsDropdown();
