@@ -1,3 +1,5 @@
+// extension/background.js
+
 // Define a state variable to track the capturing status
 let isCapturing = false;
 let isReplaying = false;
@@ -18,12 +20,17 @@ function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
-    chrome.windows.update(activeTab.windowId, { width: flow.tabDimensions.width, height: flow.tabDimensions.height }, function () {
+    chrome.windows.update(activeTab.windowId, { width: flow.tabDimensions.width, height: flow.tabDimensions.height }, function() {
       chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function (tab) {
         if (tab) {
           function sendEvent(event, index) {
+            // Get the delay before sending the event. For the first event it's 1 second, for others calculate the difference between the events
+            const delay = index === 0 ? 1000 : new Date(flow.events[index].time).getTime() - new Date(flow.events[index - 1].time).getTime();
+
             setTimeout(() => {
-              chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
+              if (event.trigger === "user") {
+                chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
+              }
 
               // If there are more events, call the next event
               if (index < flow.events.length - 1) {
@@ -31,7 +38,7 @@ function replayFlow(flow) {
               } else {
                 isReplaying = false;
               }
-            }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
+            }, delay); // Dynamic delay between each event
           }
           // Start executing the first event after a delay to allow page load
           if (flow.events.length > 0) {
@@ -113,14 +120,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               type: "click",
               x: request.x,
               y: request.y,
-              time: request.time
+              time: request.time,
+              trigger: "user"
             });
             break;
           case "input":
             captureSession.events.push({
               type: "input",
               value: request.value,
-              time: request.time
+              time: request.time,
+              trigger: "user"
             });
             break;
         }
@@ -132,7 +141,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           captureSession.events.push({
             type: "urlChange",
             value: request.currentUrl,
-            time: request.time
+            time: request.time,
+            trigger: "page"
           });
           knownUrl = request.currentUrl;
         }
