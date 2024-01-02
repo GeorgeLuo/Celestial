@@ -5,6 +5,8 @@ let capturing = false;
 let replaying = false;
 let pendingEvent = null;
 
+let typingState = {isTyping: false, typingCount: 0};
+
 chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.location.href, time: new Date().toISOString() });
 
 // Ask the background page if it's currently capturing
@@ -21,15 +23,13 @@ chrome.runtime.sendMessage({ action: 'checkState' }, function (response) {
 });
 
 function handleDocumentClick(event) {
-  console.log('handleDocumentClick called'); // Debugging line
   if (capturing) {
-    console.log('Capturing click at:', event.clientX, event.clientY); // Another debugging line
     pendingEvent = {
       action: "captureEvent",
-      opType: "click",
+      interactionType: "click",
       x: event.clientX,
       y: event.clientY,
-      time: new Date().toISOString() // Log the time to resolve any race conditions later
+      time: new Date().toISOString()
     };
     chrome.runtime.sendMessage(pendingEvent);
   }
@@ -39,7 +39,7 @@ function handleTextInput(event) {
   if (capturing) {
     pendingEvent = {
       action: "captureEvent",
-      opType: "input",
+      interactionType: "keyInput",
       value: event.key,
       time: new Date().toISOString()
     };

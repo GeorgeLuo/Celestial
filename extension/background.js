@@ -13,7 +13,8 @@ let captureSession = {
   label: "", // Added label to captureSession
   startUrl: "", // Added startUrl to captureSession
   tabDimensions: {},
-  events: []
+  events: [],
+  screenshots: []
 };
 
 function replayFlow(flow) {
@@ -50,20 +51,30 @@ function replayFlow(flow) {
   });
 }
 
+function takeScreenshot(callback) {
+  chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
+    console.log("taking screenshot");
+    callback(dataUrl); // Pass the data URL to the callback function
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.eventBeforeUnload) {
-    console.log('eventBeforeUnload event:', request);
     if (isCapturing) {
-      // Check if the last event in captureSession.events is the same as the pending click
-      const lastEvent = captureSession.events[captureSession.events.length - 1];
-      if (!lastEvent || lastEvent.time !== request.time) {
-        captureSession.events.push({
-          x: request.x,
-          y: request.y,
-          time: request.time,
-          type: request.type
-        });
-      }
+      takeScreenshot(function (dataUrl) {
+        console.log('eventBeforeUnload event:', request);
+        captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
+        // Check if the last event in captureSession.events is the same as the pending click
+        const lastEvent = captureSession.events[captureSession.events.length - 1];
+        if (!lastEvent || lastEvent.time !== request.time) {
+          captureSession.events.push({
+            x: request.x,
+            y: request.y,
+            time: request.time,
+            type: request.type
+          });
+        }
+      });
     }
     return
   }
@@ -114,19 +125,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "captureEvent":
       if (isCapturing) {
-        switch (request.opType) {
+        switch (request.interactionType) {
           case "click":
-            captureSession.events.push({
-              type: "click",
-              x: request.x,
-              y: request.y,
-              time: request.time,
-              trigger: "user"
+            // Take a screenshot when a click event is captured
+            takeScreenshot(function (dataUrl) {
+              // Store the screenshot with the associated event time as the key
+              captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
+              // Now, store the click event in the events array
+              captureSession.events.push({
+                type: "click",
+                x: request.x,
+                y: request.y,
+                time: request.time,
+                trigger: "user"
+              });
             });
-            break;
-          case "input":
+          case "keyInput":
             captureSession.events.push({
-              type: "input",
+              type: "keyInput",
               value: request.value,
               time: request.time,
               trigger: "user"
@@ -148,21 +164,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
       break;
-    case "eventBeforeUnload":
-      console.log('eventBeforeUnload event:', request);
-      if (isCapturing) {
-        // Check if the last event in captureSession.events is the same as the pending click
-        const lastEvent = captureSession.events[captureSession.events.length - 1];
-        if (!lastEvent || lastEvent.time !== request.time) {
-          captureSession.events.push({
-            x: request.x,
-            y: request.y,
-            time: request.time,
-            type: "eventBeforeUnload"
-          });
-        }
-      }
-      break;
     case "replayFlow":
       // send one event at a time to content.js from popup.js message
       isReplaying = true;
@@ -176,6 +177,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "checkState":
       sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
       break;
+    // case "eventBeforeUnload":
+    //   console.log('eventBeforeUnload event:', request);
+    //   if (isCapturing) {
+    //     // Check if the last event in captureSession.events is the same as the pending click
+    //     const lastEvent = captureSession.events[captureSession.events.length - 1];
+    //     if (!lastEvent || lastEvent.time !== request.time) {
+    //       captureSession.events.push({
+    //         x: request.x,
+    //         y: request.y,
+    //         time: request.time,
+    //         type: "eventBeforeUnload"
+    //       });
+    //     }
+    //   }
+    //   break;
     // case "replayFlow":
     //   // start replaying the flow in the active tab
     //   isReplaying = true;
