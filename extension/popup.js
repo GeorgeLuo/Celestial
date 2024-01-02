@@ -73,7 +73,6 @@ document.getElementById('exportFlows').addEventListener('click', function () {
 });
 
 document.getElementById('replayFlow').addEventListener('click', function () {
-  console.log('replayFlow');
   var selectedFlowIndex = document.getElementById('flowsSelect').value;
   chrome.storage.local.get(['captureSessions'], function (result) {
     var capturedFlows = result.captureSessions || [];

@@ -64,10 +64,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     document.removeEventListener('mousedown', handleDocumentClick);
     document.removeEventListener('keydown', handleTextInput, true);
     sendResponse({ status: 'capture stopped' });
-  } else if (request.action === "replayFlow") {
-    console.log('replayFlow')
-    replayFlow(request.flowData);
+  } else if (request.action === "playEvent") {
+    playEvent(request.event);
   }
+  // else if (request.action === "replayFlow") {
+  //   replayFlow(request.flowData);
+  // } 
 });
 
 function enableCaptureListeners() {
@@ -75,30 +77,12 @@ function enableCaptureListeners() {
   document.addEventListener('keydown', handleTextInput, true);
 }
 
-function replayFlow(flow) {
-  // The tab navigates to the start URL of the flow and then triggers the events.
-  // window.location.href = flow.startUrl;
-  // Function to execute each event after a delay
-  function executeEvent(event, index) {
-    setTimeout(() => {
-      if (event.type === 'click') {
-        simulateClick(event.x, event.y);
-      } else if (event.type === 'input') {
-        simulateInput(event.value);
-      }
-
-      // If there are more events, call the next event
-      if (index < flow.events.length - 1) {
-        executeEvent(flow.events[index + 1], index + 1);
-      } else {
-        console.log("sending end replay");
-        chrome.runtime.sendMessage({ action: "endReplay", type: "notification" });
-      }
-    }, 333); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
-  }
-  // Start executing the first event after a delay to allow page load
-  if (flow.events.length > 0) {
-    executeEvent(flow.events[0], 0);
+function playEvent(event) {
+  console.log("playEvent", event)
+  if (event.type === 'click') {
+    simulateClick(event.x, event.y);
+  } else if (event.type === 'input') {
+    simulateInput(event.value);
   }
 }
 
@@ -149,3 +133,26 @@ function simulateInput(value) {
       console.warn('simulateInput: No input field focused.');
     }
 }
+
+// function replayFlow(flow) {
+//   // The tab navigates to the start URL of the flow and then triggers the events.
+//   // window.location.href = flow.startUrl;
+//   // Function to execute each event after a delay
+//   function executeEvent(event, index) {
+//     setTimeout(() => {
+//       playEvent(event)
+
+//       // If there are more events, call the next event
+//       if (index < flow.events.length - 1) {
+//         executeEvent(flow.events[index + 1], index + 1);
+//       } else {
+//         console.log("sending end replay");
+//         chrome.runtime.sendMessage({ action: "endReplay", type: "notification" });
+//       }
+//     }, 333); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
+//   }
+//   // Start executing the first event after a delay to allow page load
+//   if (flow.events.length > 0) {
+//     executeEvent(flow.events[0], 0);
+//   }
+// }
