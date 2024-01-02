@@ -16,29 +16,28 @@ let captureSession = {
 
 function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
-  // window.location.href = flow.startUrl;
-  // Function to execute each event after a delay
-
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
+    chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function(tab) {
+      if(tab) {
+        function sendEvent(event, index) {
+          setTimeout(() => {
+            chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
 
-    function sendEvent(event, index) {
-      setTimeout(() => {
-
-        chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
-
-        // If there are more events, call the next event
-        if (index < flow.events.length - 1) {
-          sendEvent(flow.events[index + 1], index + 1);
-        } else {
-          isReplaying = false;
+            // If there are more events, call the next event
+            if (index < flow.events.length - 1) {
+              sendEvent(flow.events[index + 1], index + 1);
+            } else {
+              isReplaying = false;
+            }
+          }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
         }
-      }, 1000); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
-    }
-    // Start executing the first event after a delay to allow page load
-    if (flow.events.length > 0) {
-      sendEvent(flow.events[0], 0);
-    }
+        // Start executing the first event after a delay to allow page load
+        if (flow.events.length > 0) {
+          sendEvent(flow.events[0], 0);
+        }
+      }
+    });
   });
 }
 
