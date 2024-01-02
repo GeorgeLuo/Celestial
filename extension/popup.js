@@ -1,3 +1,5 @@
+// button handlers
+
 document.getElementById('startCapture').addEventListener('click', function () {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
@@ -18,6 +20,53 @@ document.getElementById('stopCapture').addEventListener('click', function () {
     }
   });
 });
+
+document.getElementById('replayFlow').addEventListener('click', function () {
+  var selectedFlowIndex = document.getElementById('flowsSelect').value;
+  chrome.storage.local.get(['captureSessions'], function (result) {
+    var capturedFlows = result.captureSessions || [];
+    var selectedFlow = capturedFlows[selectedFlowIndex];
+    if (selectedFlow) {
+      console.log(selectedFlow);
+      chrome.runtime.sendMessage({ action: "replayFlow", flowData: selectedFlow }, function (response) {
+        if (response && response.replayStarted) {
+          window.close(); // Closes the popup
+        } else {
+          console.error('Error starting replay flow.');
+        }
+      });
+    } else {
+      console.error('Selected flow index is not valid.');
+    }
+  });
+});
+
+document.getElementById('exportFlows').addEventListener('click', function () {
+  chrome.storage.local.get(['captureSessions'], function (result) {
+    var capturedFlows = result.captureSessions || [];
+    downloadObjectAsJson(capturedFlows, 'capturedFlows');
+  });
+});
+
+document.getElementById('clearFlows').addEventListener('click', function () {
+  chrome.storage.local.remove(['captureSessions'], function () {
+    populateCapturedFlowsDropdown();
+  });
+});
+
+// on load listeners
+
+document.addEventListener('DOMContentLoaded', populateCapturedFlowsDropdown);
+
+document.addEventListener('DOMContentLoaded', function () {
+  let labelField = document.getElementById('flowLabel');
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    let currentTab = tabs[0];
+    labelField.placeholder = currentTab.title;
+  });
+});
+
+// utilities
 
 function populateCapturedFlowsDropdown() {
   chrome.storage.local.get(['captureSessions'], function (result) {
@@ -45,15 +94,6 @@ function populateCapturedFlowsDropdown() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', populateCapturedFlowsDropdown);
-
-document.addEventListener('DOMContentLoaded', function () {
-  let labelField = document.getElementById('flowLabel');
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    let currentTab = tabs[0];
-    labelField.placeholder = currentTab.title;
-  });
-});
 
 function downloadObjectAsJson(exportObj, exportName) {
   var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
@@ -64,30 +104,3 @@ function downloadObjectAsJson(exportObj, exportName) {
   downloadAnchorNode.click();
   downloadAnchorNode.remove();
 }
-
-document.getElementById('exportFlows').addEventListener('click', function () {
-  chrome.storage.local.get(['captureSessions'], function (result) {
-    var capturedFlows = result.captureSessions || [];
-    downloadObjectAsJson(capturedFlows, 'capturedFlows');
-  });
-});
-
-document.getElementById('replayFlow').addEventListener('click', function () {
-  var selectedFlowIndex = document.getElementById('flowsSelect').value;
-  chrome.storage.local.get(['captureSessions'], function (result) {
-    var capturedFlows = result.captureSessions || [];
-    var selectedFlow = capturedFlows[selectedFlowIndex];
-    if (selectedFlow) {
-      console.log(selectedFlow);
-      chrome.runtime.sendMessage({ action: "replayFlow", flowData: selectedFlow }, function (response) {
-        if (response && response.replayStarted) {
-          window.close(); // Closes the popup
-        } else {
-          console.error('Error starting replay flow.');
-        }
-      });
-    } else {
-      console.error('Selected flow index is not valid.');
-    }
-  });
-});

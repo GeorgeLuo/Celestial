@@ -20,7 +20,7 @@ function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
-    chrome.windows.update(activeTab.windowId, { width: flow.tabDimensions.width, height: flow.tabDimensions.height }, function() {
+    chrome.windows.update(activeTab.windowId, { width: flow.tabDimensions.width, height: flow.tabDimensions.height }, function () {
       chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function (tab) {
         if (tab) {
           function sendEvent(event, index) {
@@ -163,9 +163,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
       break;
-    case "checkState":
-      sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
-      break;
     case "replayFlow":
       // send one event at a time to content.js from popup.js message
       isReplaying = true;
@@ -175,6 +172,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "endReplay":
       replayFlow = false;
       sendResponse({ replayEnded: true });
+      break;
+    case "checkState":
+      sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
       break;
     // case "replayFlow":
     //   // start replaying the flow in the active tab
