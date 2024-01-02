@@ -18,8 +18,8 @@ function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
-    chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function(tab) {
-      if(tab) {
+    chrome.tabs.update(activeTab.id, { url: flow.startUrl }, function (tab) {
+      if (tab) {
         function sendEvent(event, index) {
           setTimeout(() => {
             chrome.tabs.sendMessage(activeTab.id, { action: "playEvent", event: event });
