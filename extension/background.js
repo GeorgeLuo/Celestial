@@ -112,7 +112,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   console.log('Capture sessions saved:', sessions);
                   // Reset the captureSession after ensuring it's saved
                   isCapturing = false;
-                  captureSession = { startTime: null, endTime: null, tabDimensions: {}, startUrl: "", events: [] };
+                  captureSession = {
+                    startTime: null,
+                    endTime: null,
+                    label: "", // Added label to captureSession
+                    startUrl: "", // Added startUrl to captureSession
+                    tabDimensions: {},
+                    events: [],
+                    screenshots: []
+                  }; 
                   sendResponse({ status: 'capture ended', session: captureSession });
                 });
               });
@@ -127,6 +135,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (isCapturing) {
         switch (request.interactionType) {
           case "click":
+            console.log(request, request.interactionType, request.x, request.y);
             // Take a screenshot when a click event is captured
             takeScreenshot(function (dataUrl) {
               // Store the screenshot with the associated event time as the key
@@ -140,7 +149,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 trigger: "user"
               });
             });
+            break;
           case "keyInput":
+            console.log(request.interactionType, request.value);
             captureSession.events.push({
               type: "keyInput",
               value: request.value,

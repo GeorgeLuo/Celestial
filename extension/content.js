@@ -73,6 +73,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 function enableCaptureListeners() {
+  console.log("enableCaptureListeners");
   document.addEventListener('mousedown', handleDocumentClick);
   document.addEventListener('keydown', handleTextInput, true);
 }
@@ -81,7 +82,7 @@ function playEvent(event) {
   console.log("playEvent", event)
   if (event.type === 'click') {
     simulateClick(event.x, event.y);
-  } else if (event.type === 'input') {
+  } else if (event.type === 'keyInput') {
     simulateInput(event.value);
   }
 }
