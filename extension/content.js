@@ -47,6 +47,21 @@ function handleTextInput(event) {
   }
 }
 
+function handlePasteFromClipboard(event) {
+  const clipboardData = event.clipboardData;
+  let pastedText = clipboardData.getData('text');
+  console.log('Pasted text:', pastedText);
+  if (capturing) {
+    pendingEvent = {
+      action: "captureEvent",
+      interactionType: "paste",
+      value: pastedText,
+      time: new Date().toISOString()
+    };
+    chrome.runtime.sendMessage(pendingEvent);
+  }
+}
+
 // Add beforeunload event listener to ensure pending click is sent before navigation
 window.addEventListener('beforeunload', function (event) {
   if (pendingEvent) {

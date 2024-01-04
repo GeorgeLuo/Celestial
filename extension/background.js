@@ -17,7 +17,7 @@ function setNextTypingScreenshotCount() {
 function resetNextTypingScreenshotCount() {
   typeCount = 0;
   nextTypingScreenshotCount = 6;
-  
+
 }
 
 let knownUrl = "";
@@ -38,7 +38,7 @@ function resetCaptureMetadata() {
   isCapturing = false;
 
   resetNextTypingScreenshotCount();
-  
+
   knownUrl = "";
   screenshotId = 0;
   captureSession = {
@@ -236,6 +236,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               });
             }
+            break;
+          case "paste":
+            captureSession.events.push({
+              type: "paste",
+              value: request.value,
+              trigger: "user"
+            });
             break;
         }
       }
