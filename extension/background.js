@@ -54,6 +54,25 @@ function resetCaptureMetadata() {
 
 // END CAPTURE SESSION METADATA
 
+const EventCaptureType = {
+  PASTE: 'paste',
+  CLICK: 'click',
+  KEY_INPUT: 'keyInput'
+};
+
+function addEventToCaptureSession(event) {
+  console.log("adding event", event);
+  switch (event.type) {
+    case EventCaptureType.CLICK:
+      // successive clicks don't warrant taking a screenshot
+      takeScreenshot(function (dataUrl, screenshotTime) {
+        storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.CLICK);
+      });
+      break;
+  }
+  captureSession.events.push(event);
+}
+
 function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -90,7 +109,7 @@ function replayFlow(flow) {
 
 function takeScreenshot(callback) {
   chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
-    console.log("taking screenshot");
+    console.log("taking screenshot", dataUrl);
     callback(dataUrl, new Date().toISOString());
   });
 }
@@ -130,7 +149,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Check if the last event in captureSession.events is the same as the pending click
         const lastEvent = captureSession.events[captureSession.events.length - 1];
         if (!lastEvent || lastEvent.time !== request.time) {
-          captureSession.events.push({
+          addEventToCaptureSession({
             x: request.x,
             y: request.y,
             time: request.time,
@@ -199,22 +218,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         switch (request.interactionType) {
           case "click":
             resetNextTypingScreenshotCount();
-            console.log(request, request.interactionType, request.x, request.y);
             // Take a screenshot when a click event is captured
-            takeScreenshot(function (dataUrl, screenshotTime) {
-              captureSession.events.push({
-                type: "click",
-                x: request.x,
-                y: request.y,
-                time: request.time,
-                trigger: "user"
-              });
-              storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.CLICK);
+            addEventToCaptureSession({
+              type: "click",
+              x: request.x,
+              y: request.y,
+              time: request.time,
+              trigger: "user"
             });
             break;
           case "keyInput":
-            console.log(request.interactionType, request.value);
-            captureSession.events.push({
+            addEventToCaptureSession({
               type: "keyInput",
               value: request.value,
               time: request.time,
@@ -238,7 +252,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
             break;
           case "paste":
-            captureSession.events.push({
+            addEventToCaptureSession({
               type: "paste",
               value: request.value,
               trigger: "user"
@@ -251,7 +265,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (isCapturing) {
         resetNextTypingScreenshotCount();
         if (knownUrl !== request.currentUrl) {
-          captureSession.events.push({
+          addEventToCaptureSession({
             type: "urlChange",
             value: request.currentUrl,
             time: request.time,
@@ -265,7 +279,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       break;
     case "replayFlow":
-      // send one event at a time to content.js from popup.js message
       isReplaying = true;
       sendResponse({ replayStarted: true });
       replayFlow(request.flowData);
