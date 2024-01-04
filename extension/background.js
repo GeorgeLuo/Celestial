@@ -1,10 +1,22 @@
 // extension/background.js
 
-// Define a state variable to track the capturing status
-let isCapturing = false;
 let isReplaying = false;
 
+// BEGIN CAPTURE SESSION METADATA
+
+let isCapturing = false;
+
+let isTyping = true;
+let typeCount = 0;
+let nextTypingScreenshotCount = 6;
+
+function setNextTypingScreenshotCount() {
+  nextTypingScreenshotCount *= 2;
+  console.log(nextTypingScreenshotCount);
+}
+
 let knownUrl = "";
+let screenshotId = 0;
 
 // Define the captureSession data structure to store session information
 let captureSession = {
@@ -16,6 +28,28 @@ let captureSession = {
   events: [],
   screenshots: []
 };
+
+function resetCaptureMetadata() {
+  isCapturing = false;
+
+  isTyping = false;
+  typeCount = 0;
+  nextTypingScreenshotCount = 1;
+
+  knownUrl = "";
+  screenshotId = 0;
+  captureSession = {
+    startTime: null,
+    endTime: null,
+    label: "", // Added label to captureSession
+    startUrl: "", // Added startUrl to captureSession
+    tabDimensions: {},
+    events: [],
+    screenshots: []
+  };
+}
+
+// END CAPTURE SESSION METADATA
 
 function replayFlow(flow) {
   // The tab navigates to the start URL of the flow and then triggers the events.
@@ -54,16 +88,46 @@ function replayFlow(flow) {
 function takeScreenshot(callback) {
   chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
     console.log("taking screenshot");
-    callback(dataUrl); // Pass the data URL to the callback function
+    callback(dataUrl, new Date().toISOString());
   });
+}
+
+/**
+ * screenshots are taken primarily to track what happens at various stable states. 
+ * So the label may take the values of 
+ * 
+ * BEGINNING_OF_CAPTURE, 
+ * KEY_INPUT, 
+ * CLICK, 
+ * BEFORE_UNLOAD,
+ * AFTER_LOAD,
+ * END_OF_CAPTURE
+ * 
+ * @param {*} callback 
+ */
+function storeScreenshot(dataUrl, time, label) {
+  console.log('screenshot label:', label);
+  captureSession.screenshots.push({ time: time, dataUrl: dataUrl, label: label, screenshotId });
+  screenshotId += 1;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.eventBeforeUnload) {
     if (isCapturing) {
-      takeScreenshot(function (dataUrl) {
-        console.log('eventBeforeUnload event:', request);
-        captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
+      takeScreenshot(function (dataUrl, screenshotTime) {
+        // console.log('eventBeforeUnload event:', request);
+        // captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
+        // // Check if the last event in captureSession.events is the same as the pending click
+        // const lastEvent = captureSession.events[captureSession.events.length - 1];
+        // if (!lastEvent || lastEvent.time !== request.time) {
+        //   captureSession.events.push({
+        //     x: request.x,
+        //     y: request.y,
+        //     time: request.time,
+        //     type: request.type
+        //   });
+        // }
+
         // Check if the last event in captureSession.events is the same as the pending click
         const lastEvent = captureSession.events[captureSession.events.length - 1];
         if (!lastEvent || lastEvent.time !== request.time) {
@@ -74,6 +138,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             type: request.type
           });
         }
+        storeScreenshot(dataUrl, screenshotTime, label = "BEFORE_UNLOAD");
       });
     }
     return
@@ -111,16 +176,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 chrome.storage.local.set({ captureSessions: sessions }, function () {
                   console.log('Capture sessions saved:', sessions);
                   // Reset the captureSession after ensuring it's saved
-                  isCapturing = false;
-                  captureSession = {
-                    startTime: null,
-                    endTime: null,
-                    label: "", // Added label to captureSession
-                    startUrl: "", // Added startUrl to captureSession
-                    tabDimensions: {},
-                    events: [],
-                    screenshots: []
-                  }; 
+                  resetCaptureMetadata();
                   sendResponse({ status: 'capture ended', session: captureSession });
                 });
               });
@@ -135,12 +191,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (isCapturing) {
         switch (request.interactionType) {
           case "click":
+            isTyping = false;
             console.log(request, request.interactionType, request.x, request.y);
             // Take a screenshot when a click event is captured
-            takeScreenshot(function (dataUrl) {
-              // Store the screenshot with the associated event time as the key
-              captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
-              // Now, store the click event in the events array
+            takeScreenshot(function (dataUrl, screenshotTime) {
               captureSession.events.push({
                 type: "click",
                 x: request.x,
@@ -148,6 +202,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 time: request.time,
                 trigger: "user"
               });
+              storeScreenshot(dataUrl, screenshotTime, label = "CLICK");
             });
             break;
           case "keyInput":
@@ -158,6 +213,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               time: request.time,
               trigger: "user"
             });
+            
+            // if we're in the middle of typing, we don't need to take a screenshot
+            // the final state of text is captured either when text is out of focus (TODO), 
+            // out of screen (for instance, scrolling TODO), page change, or on the next click
+            // so take the screenshot based on 72 words/minute, average 5 characters per word,
+            // 360 character/minute = 6 characters per second, and doubling after every screenshot
+
+            typeCount += 1;
+            if (typeCount === nextTypingScreenshotCount) {
+              takeScreenshot(function (dataUrl, screenshotTime) {
+                if (typeCount === nextTypingScreenshotCount) {
+                  storeScreenshot(dataUrl, screenshotTime, label = "KEY_INPUT");
+                  setNextTypingScreenshotCount();
+                }
+              });
+            }
             break;
         }
       }
