@@ -6,13 +6,18 @@ let isReplaying = false;
 
 let isCapturing = false;
 
-let isTyping = true;
 let typeCount = 0;
 let nextTypingScreenshotCount = 6;
 
 function setNextTypingScreenshotCount() {
   nextTypingScreenshotCount *= 2;
   console.log(nextTypingScreenshotCount);
+}
+
+function resetNextTypingScreenshotCount() {
+  typeCount = 0;
+  nextTypingScreenshotCount = 6;
+  
 }
 
 let knownUrl = "";
@@ -32,17 +37,15 @@ let captureSession = {
 function resetCaptureMetadata() {
   isCapturing = false;
 
-  isTyping = false;
-  typeCount = 0;
-  nextTypingScreenshotCount = 1;
-
+  resetNextTypingScreenshotCount();
+  
   knownUrl = "";
   screenshotId = 0;
   captureSession = {
     startTime: null,
     endTime: null,
-    label: "", // Added label to captureSession
-    startUrl: "", // Added startUrl to captureSession
+    label: "",
+    startUrl: "",
     tabDimensions: {},
     events: [],
     screenshots: []
@@ -92,6 +95,15 @@ function takeScreenshot(callback) {
   });
 }
 
+const CaptureStage = {
+  BEGINNING_OF_CAPTURE: 'BEGINNING_OF_CAPTURE',
+  KEY_INPUT: 'KEY_INPUT',
+  CLICK: 'CLICK',
+  BEFORE_UNLOAD: 'BEFORE_UNLOAD',
+  AFTER_LOAD: 'AFTER_LOAD',
+  END_OF_CAPTURE: 'END_OF_CAPTURE'
+};
+
 /**
  * screenshots are taken primarily to track what happens at various stable states. 
  * So the label may take the values of 
@@ -115,19 +127,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.eventBeforeUnload) {
     if (isCapturing) {
       takeScreenshot(function (dataUrl, screenshotTime) {
-        // console.log('eventBeforeUnload event:', request);
-        // captureSession.screenshots.push({ time: request.time, dataUrl: dataUrl });
-        // // Check if the last event in captureSession.events is the same as the pending click
-        // const lastEvent = captureSession.events[captureSession.events.length - 1];
-        // if (!lastEvent || lastEvent.time !== request.time) {
-        //   captureSession.events.push({
-        //     x: request.x,
-        //     y: request.y,
-        //     time: request.time,
-        //     type: request.type
-        //   });
-        // }
-
         // Check if the last event in captureSession.events is the same as the pending click
         const lastEvent = captureSession.events[captureSession.events.length - 1];
         if (!lastEvent || lastEvent.time !== request.time) {
@@ -138,12 +137,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             type: request.type
           });
         }
-        storeScreenshot(dataUrl, screenshotTime, label = "BEFORE_UNLOAD");
+        storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.BEFORE_UNLOAD);
       });
     }
     return
   }
   switch (request.action) {
+    // port signal from popup.js to content.js to start capturing
     case "startCapture":
       isCapturing = true;
       console.log('startCapture');
@@ -157,6 +157,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         captureSession.startUrl = tab.url;
         knownUrl = tab.url;
         // Send message to content.js to start capturing
+        takeScreenshot(function (dataUrl, screenshotTime) {
+          storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.BEGINNING_OF_CAPTURE);
+        });
         chrome.tabs.sendMessage(tab.id, { action: "startCapture" });
       });
       break;
@@ -169,16 +172,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.tabs.sendMessage(activeTab.id, { action: "stopCapture" }, function (response) {
             if (response && response.status === 'capture stopped') {
               captureSession.endTime = new Date().toISOString();
-              // Fetch the existing captureSessions array, add the new session to it, and save it back
-              chrome.storage.local.get({ captureSessions: [] }, function (result) {
-                let sessions = result.captureSessions;
-                sessions.push(captureSession);
-                chrome.storage.local.set({ captureSessions: sessions }, function () {
-                  console.log('Capture sessions saved:', sessions);
-                  // Reset the captureSession after ensuring it's saved
-                  resetCaptureMetadata();
-                  sendResponse({ status: 'capture ended', session: captureSession });
+              takeScreenshot(function (dataUrl, screenshotTime) {
+                storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.END_OF_CAPTURE);
+                // Fetch the existing captureSessions array, add the new session to it, and save it back
+                chrome.storage.local.get({ captureSessions: [] }, function (result) {
+                  let sessions = result.captureSessions;
+                  sessions.push(captureSession);
+                  chrome.storage.local.set({ captureSessions: sessions }, function () {
+                    console.log('Capture sessions saved:', sessions);
+                    // Reset the captureSession after ensuring it's saved
+                    resetCaptureMetadata();
+                    sendResponse({ status: 'capture ended', session: captureSession });
+                  });
                 });
+
               });
             }
           });
@@ -191,7 +198,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (isCapturing) {
         switch (request.interactionType) {
           case "click":
-            isTyping = false;
+            resetNextTypingScreenshotCount();
             console.log(request, request.interactionType, request.x, request.y);
             // Take a screenshot when a click event is captured
             takeScreenshot(function (dataUrl, screenshotTime) {
@@ -202,7 +209,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 time: request.time,
                 trigger: "user"
               });
-              storeScreenshot(dataUrl, screenshotTime, label = "CLICK");
+              storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.CLICK);
             });
             break;
           case "keyInput":
@@ -213,7 +220,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               time: request.time,
               trigger: "user"
             });
-            
+
             // if we're in the middle of typing, we don't need to take a screenshot
             // the final state of text is captured either when text is out of focus (TODO), 
             // out of screen (for instance, scrolling TODO), page change, or on the next click
@@ -224,7 +231,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (typeCount === nextTypingScreenshotCount) {
               takeScreenshot(function (dataUrl, screenshotTime) {
                 if (typeCount === nextTypingScreenshotCount) {
-                  storeScreenshot(dataUrl, screenshotTime, label = "KEY_INPUT");
+                  storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
                   setNextTypingScreenshotCount();
                 }
               });
@@ -235,6 +242,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "contentReloaded":
       if (isCapturing) {
+        resetNextTypingScreenshotCount();
         if (knownUrl !== request.currentUrl) {
           captureSession.events.push({
             type: "urlChange",
@@ -243,6 +251,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             trigger: "page"
           });
           knownUrl = request.currentUrl;
+          takeScreenshot(function (dataUrl, screenshotTime) {
+            storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.AFTER_LOAD);
+          });
         }
       }
       break;
@@ -259,31 +270,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "checkState":
       sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
       break;
-    // case "eventBeforeUnload":
-    //   console.log('eventBeforeUnload event:', request);
-    //   if (isCapturing) {
-    //     // Check if the last event in captureSession.events is the same as the pending click
-    //     const lastEvent = captureSession.events[captureSession.events.length - 1];
-    //     if (!lastEvent || lastEvent.time !== request.time) {
-    //       captureSession.events.push({
-    //         x: request.x,
-    //         y: request.y,
-    //         time: request.time,
-    //         type: "eventBeforeUnload"
-    //       });
-    //     }
-    //   }
-    //   break;
-    // case "replayFlow":
-    //   // start replaying the flow in the active tab
-    //   isReplaying = true;
-    //   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    //     let activeTab = tabs[0];
-    //     chrome.tabs.sendMessage(activeTab.id, { action: "replayFlow", flowData: request.flowData });
-    //   });
-    //   // Optionally, return a response message
-    //   sendResponse({ replayStarted: true });
-    //   break;
   }
   return true;
 });
