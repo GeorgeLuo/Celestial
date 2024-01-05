@@ -1,5 +1,4 @@
 // Function to fetch the flow data from the localStorage
-// Function to fetch the flow data from the localStorage
 function fetchFlowData() {
     var flowData = localStorage.getItem('selectedFlowData');
     if (flowData) {
