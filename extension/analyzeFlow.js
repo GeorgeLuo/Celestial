@@ -7,20 +7,33 @@ function fetchFlowData() {
     return null;
 }
 
-// Function to display images in the analyzeFlow.html
-function displayImages(flow) {
+// Function to display images and their labels in the analyzeFlow.html
+function displayImagesWithLabels(flow) {
     var screenshotsContainer = document.getElementById('screenshotsContainer');
     flow.screenshots.forEach(function (screenshotData) {
+        var screenshotDiv = document.createElement('div');
+        screenshotDiv.className = 'screenshotDiv';
+
         var img = document.createElement('img');
         img.src = screenshotData.dataUrl;
-        screenshotsContainer.appendChild(img);
+        screenshotDiv.appendChild(img);
+
+        var labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'screenshotLabel';
+        labelInput.value = screenshotData.label +
+                           (Object.keys(screenshotData.values).length > 0 ?
+                           ': ' + JSON.stringify(screenshotData.values) : '');
+        screenshotDiv.appendChild(labelInput);
+
+        screenshotsContainer.appendChild(screenshotDiv);
     });
 }
+
 document.addEventListener('DOMContentLoaded', function () {
     var flowData = fetchFlowData();
     if (flowData) {
-        displayImages(flowData); // Call the new function to display images
-        // All the code related to analyzing the flow using the fetched flowData goes here
+        displayImagesWithLabels(flowData);  // Updated function call
         console.log(flowData);
     } else {
         console.error('Flow data is not available.');
