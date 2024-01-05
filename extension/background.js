@@ -6,6 +6,7 @@ let isReplaying = false;
 
 let isCapturing = false;
 
+let fullKeyInputSequence = []
 let typeCount = 0;
 let nextTypingScreenshotCount = 6;
 
@@ -15,6 +16,7 @@ function setNextTypingScreenshotCount() {
 }
 
 function resetNextTypingScreenshotCount() {
+  fullKeyInputSequence = [];
   typeCount = 0;
   nextTypingScreenshotCount = 6;
 
@@ -82,7 +84,7 @@ function addEventToCaptureSession(event) {
       });
       break;
     case EventCaptureType.KEY_INPUT:
-      values = { data: event.value };
+      values = { data: event.value, fullKeyInputSequence: [...fullKeyInputSequence] };
       // successive clicks don't warrant taking a screenshot
       if (captureSession.screenshots.length > 0) {
         const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
@@ -95,7 +97,7 @@ function addEventToCaptureSession(event) {
 
       takeScreenshot(function (dataUrl, screenshotTime) {
         console.log("screenshot values", values);
-        storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK, values = values);
+        storeScreenshot(dataUrl, screenshotTime, CaptureStage.KEY_INPUT, values = values);
       });
       break;
   }
@@ -269,7 +271,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // out of screen (for instance, scrolling TODO), page change, or on the next click
             // so take the screenshot based on 72 words/minute, average 5 characters per word,
             // 360 character/minute = 6 characters per second, and doubling after every screenshot
-
+            fullKeyInputSequence.push(request.value);
             typeCount += 1;
             if (typeCount === nextTypingScreenshotCount) {
               takeScreenshot(function (dataUrl, screenshotTime) {

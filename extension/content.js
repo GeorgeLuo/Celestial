@@ -149,26 +149,3 @@ function simulateInput(value) {
       console.warn('simulateInput: No input field focused.');
     }
 }
-
-// function replayFlow(flow) {
-//   // The tab navigates to the start URL of the flow and then triggers the events.
-//   // window.location.href = flow.startUrl;
-//   // Function to execute each event after a delay
-//   function executeEvent(event, index) {
-//     setTimeout(() => {
-//       playEvent(event)
-
-//       // If there are more events, call the next event
-//       if (index < flow.events.length - 1) {
-//         executeEvent(flow.events[index + 1], index + 1);
-//       } else {
-//         console.log("sending end replay");
-//         chrome.runtime.sendMessage({ action: "endReplay", type: "notification" });
-//       }
-//     }, 333); // Delay of 1000ms (1 second) between each event. Adjust as necessary.
-//   }
-//   // Start executing the first event after a delay to allow page load
-//   if (flow.events.length > 0) {
-//     executeEvent(flow.events[0], 0);
-//   }
-// }
