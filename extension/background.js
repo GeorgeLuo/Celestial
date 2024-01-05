@@ -16,10 +16,14 @@ function setNextTypingScreenshotCount() {
 }
 
 function resetNextTypingScreenshotCount() {
+  if (fullKeyInputSequence.length > 0 && captureSession.screenshots.length > 0) {
+    const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+    lastScreenshot.values.fullKeyInputSequence = [...fullKeyInputSequence];
+    lastScreenshot.values.endKeyInput = true;
+  }
   fullKeyInputSequence = [];
   typeCount = 0;
   nextTypingScreenshotCount = 6;
-
 }
 
 let knownUrl = "";
@@ -276,8 +280,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (typeCount === nextTypingScreenshotCount) {
               takeScreenshot(function (dataUrl, screenshotTime) {
                 if (typeCount === nextTypingScreenshotCount) {
-                  storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
                   setNextTypingScreenshotCount();
+                  storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
                 }
               });
             }
