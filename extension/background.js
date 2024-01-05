@@ -62,19 +62,23 @@ const EventCaptureType = {
 
 function addEventToCaptureSession(event) {
   console.log("adding event", event);
+  let values = {};
   switch (event.type) {
     case EventCaptureType.CLICK:
+      values = {x: event.x, y: event.y};
       // successive clicks don't warrant taking a screenshot
       if (captureSession.screenshots.length > 0) {
         const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
         const currentTime = new Date().toISOString();
-        if (!lastScreenshot || (Date.parse(currentTime) - Date.parse(lastScreenshot.time) > 500)) {
+        if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
+          console.log(Date.parse(currentTime), Date.parse(lastScreenshot.time));
           break;
         }
       }
 
       takeScreenshot(function (dataUrl, screenshotTime) {
-        storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK);
+        console.log("screenshot values", values);
+        storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK, values=values);
       });
       break;
   }
@@ -144,9 +148,9 @@ const CaptureStage = {
  * 
  * @param {*} callback 
  */
-function storeScreenshot(dataUrl, time, label) {
+function storeScreenshot(dataUrl, time, label, values={}) {
   console.log('screenshot label:', label);
-  captureSession.screenshots.push({ time: time, dataUrl: dataUrl, label: label, screenshotId });
+  captureSession.screenshots.push({ time: time, dataUrl: dataUrl, label: label, screenshotId, values: values });
   screenshotId += 1;
 }
 
