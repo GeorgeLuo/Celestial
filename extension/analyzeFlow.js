@@ -4,7 +4,7 @@ function fetchFlowData() {
     if (flowData) {
         flowData = JSON.parse(flowData);
         flowData.screenshots = flowData.screenshots.filter(function (screenshot) {
-            return screenshot.label !== 'KEY_INPUT' || screenshot.values.endKeyInput === true;
+            return screenshot.label !== 'keyInput' || screenshot.values.endKeyInput === true;
         });
         return flowData;
     }
@@ -33,9 +33,9 @@ function displayImagesWithLabels(flow) {
 }
 
 function createHumanReadableLabel(screenshotData) {
-    if (screenshotData.label === 'CLICK') {
+    if (screenshotData.label === 'click') {
         return `click at position (${screenshotData.values.x}, ${screenshotData.values.y})`;
-    } else if (screenshotData.label === 'KEY_INPUT' || screenshotData.values.endKeyInput === true) {
+    } else if (screenshotData.label === 'keyInput' || screenshotData.values.endKeyInput === true) {
         var label = 'input text "';
         let lastChar = '"';
         for (var i = 0; i < screenshotData.values.fullKeyInputSequence.length; i++) {

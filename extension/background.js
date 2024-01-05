@@ -69,42 +69,55 @@ const EventCaptureType = {
 function addEventToCaptureSession(event) {
   console.log("adding event", event);
   let values = {};
+  let attemptScreenshot = true;
   switch (event.type) {
     case EventCaptureType.CLICK:
       values = { x: event.x, y: event.y };
       // successive clicks don't warrant taking a screenshot
-      if (captureSession.screenshots.length > 0) {
-        const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
-        const currentTime = new Date().toISOString();
-        if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
-          console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
-          break;
-        }
-      }
-
-      takeScreenshot(function (dataUrl, screenshotTime) {
-        console.log("screenshot values", values);
-        storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK, values = values);
-      });
+      // if (captureSession.screenshots.length > 0) {
+      //   const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+      //   const currentTime = new Date().toISOString();
+      //   if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
+      //     console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
+      //     break;
+      //   }
+      // }
+      // takeScreenshot(function (dataUrl, screenshotTime) {
+      //   console.log("screenshot values", values);
+      //   storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK, values = values);
+      // });
+      // takeAndSaveScreenshot(EventCaptureType.CLICK, values);
       break;
     case EventCaptureType.KEY_INPUT:
       values = { data: event.value, fullKeyInputSequence: [...fullKeyInputSequence] };
       // successive clicks don't warrant taking a screenshot
-      if (captureSession.screenshots.length > 0) {
-        const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
-        const currentTime = new Date().toISOString();
-        if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
-          console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
-          break;
-        }
-      }
+      // if (captureSession.screenshots.length > 0) {
+      //   const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+      //   const currentTime = new Date().toISOString();
+      //   if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
+      //     console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
+      //     break;
+      //   }
+      // }
 
-      takeScreenshot(function (dataUrl, screenshotTime) {
-        console.log("screenshot values", values);
-        storeScreenshot(dataUrl, screenshotTime, CaptureStage.KEY_INPUT, values = values);
-      });
+      // takeScreenshot(function (dataUrl, screenshotTime) {
+      //   console.log("screenshot values", values);
+      //   storeScreenshot(dataUrl, screenshotTime, CaptureStage.KEY_INPUT, values = values);
+      // });
+      // takeAndSaveScreenshot(EventCaptureType.KEY_INPUT, values);
+      if (typeCount === nextTypingScreenshotCount) {
+        // takeScreenshot(function (dataUrl, screenshotTime) {
+        //   if (typeCount !== nextTypingScreenshotCount) {
+        setNextTypingScreenshotCount();
+        //   storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
+        // } else {
+        attemptScreenshot = false;
+        // }
+        // });
+      }
       break;
   }
+  if (attemptScreenshot) takeAndSaveScreenshot(event.type, values);
   captureSession.events.push(event);
 }
 
@@ -146,6 +159,28 @@ function takeScreenshot(callback) {
   chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
     console.log("taking screenshot", dataUrl);
     callback(dataUrl, new Date().toISOString());
+  });
+}
+
+/**
+ * all-in-one screenshotting including rate limiting 
+ * and storage
+ * @param {*} eventCaptureType 
+ * @param {*} values 
+ * @returns 
+ */
+function takeAndSaveScreenshot(eventCaptureType, values) {
+  if (captureSession.screenshots.length > 0) {
+    const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+    const currentTime = new Date().toISOString();
+    if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
+      console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
+      return false;
+    }
+  }
+  chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
+    console.log("taking screenshot", dataUrl, values);
+    storeScreenshot(dataUrl, new Date().toISOString(), eventCaptureType, values = values);
   });
 }
 
@@ -263,12 +298,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             break;
           case "keyInput":
-            addEventToCaptureSession({
-              type: "keyInput",
-              value: request.value,
-              time: request.time,
-              trigger: "user"
-            });
 
             // if we're in the middle of typing, we don't need to take a screenshot
             // the final state of text is captured either when text is out of focus (TODO), 
@@ -277,14 +306,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // 360 character/minute = 6 characters per second, and doubling after every screenshot
             fullKeyInputSequence.push(request.value);
             typeCount += 1;
-            if (typeCount === nextTypingScreenshotCount) {
-              takeScreenshot(function (dataUrl, screenshotTime) {
-                if (typeCount === nextTypingScreenshotCount) {
-                  setNextTypingScreenshotCount();
-                  storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
-                }
-              });
-            }
+
+            addEventToCaptureSession({
+              type: "keyInput",
+              value: request.value,
+              time: request.time,
+              trigger: "user"
+            });
+
+            // if (typeCount === nextTypingScreenshotCount) {
+            //   takeScreenshot(function (dataUrl, screenshotTime) {
+            //     if (typeCount === nextTypingScreenshotCount) {
+            //       setNextTypingScreenshotCount();
+            //       storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.KEY_INPUT);
+            //     }
+            //   });
+            // }
             break;
           case "paste":
             addEventToCaptureSession({
