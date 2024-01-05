@@ -65,8 +65,16 @@ function addEventToCaptureSession(event) {
   switch (event.type) {
     case EventCaptureType.CLICK:
       // successive clicks don't warrant taking a screenshot
+      if (captureSession.screenshots.length > 0) {
+        const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+        const currentTime = new Date().toISOString();
+        if (!lastScreenshot || (Date.parse(currentTime) - Date.parse(lastScreenshot.time) > 500)) {
+          break;
+        }
+      }
+
       takeScreenshot(function (dataUrl, screenshotTime) {
-        storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.CLICK);
+        storeScreenshot(dataUrl, screenshotTime, CaptureStage.CLICK);
       });
       break;
   }
