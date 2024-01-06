@@ -91,6 +91,7 @@ function enableCaptureListeners() {
   console.log("enableCaptureListeners");
   document.addEventListener('mousedown', handleDocumentClick);
   document.addEventListener('keydown', handleTextInput, true);
+  document.addEventListener('paste', handlePasteFromClipboard);
 }
 
 function playEvent(event) {

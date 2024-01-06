@@ -119,7 +119,7 @@ function addEventToCaptureSession(event) {
       }
       break;
     case EventCaptureType.PASTE:
-      values = ({ data: event.value });
+      values = { data: event.value };
       break;
   }
   if (attemptScreenshot) takeAndSaveScreenshot(event.type, values = values);

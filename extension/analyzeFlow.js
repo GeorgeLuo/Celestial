@@ -17,17 +17,14 @@ function displayImagesWithLabels(flow) {
     flow.screenshots.forEach(function (screenshotData) {
         var screenshotDiv = document.createElement('div');
         screenshotDiv.className = 'screenshotDiv';
-
         var img = document.createElement('img');
         img.src = screenshotData.dataUrl;
         screenshotDiv.appendChild(img);
-
         var labelInput = document.createElement('input');
         labelInput.type = 'text';
         labelInput.className = 'screenshotLabel';
         labelInput.value = createHumanReadableLabel(screenshotData);
         screenshotDiv.appendChild(labelInput);
-
         screenshotsContainer.appendChild(screenshotDiv);
     });
 }
@@ -50,6 +47,8 @@ function createHumanReadableLabel(screenshotData) {
         }
         label += lastChar;
         return label;
+    } else if (screenshotData.label === 'paste') {
+        return `paste text "${screenshotData.values.data}"`;
     }
     return screenshotData.label;
 }
