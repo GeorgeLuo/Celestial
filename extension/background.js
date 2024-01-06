@@ -63,7 +63,9 @@ function resetCaptureMetadata() {
 const EventCaptureType = {
   PASTE: 'paste',
   CLICK: 'click',
-  KEY_INPUT: 'keyInput'
+  KEY_INPUT: 'keyInput',
+  START_CAPTURE: 'startCapture',
+  END_OF_CAPTURE: 'endOfCapture'
 };
 
 function addEventToCaptureSession(event) {
@@ -116,8 +118,11 @@ function addEventToCaptureSession(event) {
         // });
       }
       break;
+    case EventCaptureType.PASTE:
+      values = ({ data: event.value });
+      break;
   }
-  if (attemptScreenshot) takeAndSaveScreenshot(event.type, values);
+  if (attemptScreenshot) takeAndSaveScreenshot(event.type, values = values);
   captureSession.events.push(event);
 }
 
@@ -169,7 +174,7 @@ function takeScreenshot(callback) {
  * @param {*} values 
  * @returns 
  */
-function takeAndSaveScreenshot(eventCaptureType, values) {
+function takeAndSaveScreenshot(eventCaptureType, values = {}, callback) {
   if (captureSession.screenshots.length > 0) {
     const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
     const currentTime = new Date().toISOString();
@@ -180,9 +185,27 @@ function takeAndSaveScreenshot(eventCaptureType, values) {
   }
   chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
     console.log("taking screenshot", dataUrl, values);
-    storeScreenshot(dataUrl, new Date().toISOString(), eventCaptureType, values = values);
+    storeScreenshot(dataUrl, new Date().toISOString(), eventCaptureType, values);
+    if (typeof callback === 'function') {
+      callback();
+    }
   });
 }
+
+// function takeAndSaveScreenshot(eventCaptureType, values = {}) {
+//   if (captureSession.screenshots.length > 0) {
+//     const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
+//     const currentTime = new Date().toISOString();
+//     if (Date.parse(currentTime) - Date.parse(lastScreenshot.time) < 500) {
+//       console.log("screenshot rate limited", Date.parse(currentTime), Date.parse(lastScreenshot.time));
+//       return false;
+//     }
+//   }
+//   chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
+//     console.log("taking screenshot", dataUrl, values);
+//     storeScreenshot(dataUrl, new Date().toISOString(), eventCaptureType, values = values);
+//   });
+// }
 
 const CaptureStage = {
   BEGINNING_OF_CAPTURE: 'BEGINNING_OF_CAPTURE',
@@ -246,35 +269,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         captureSession.startUrl = tab.url;
         knownUrl = tab.url;
         // Send message to content.js to start capturing
-        takeScreenshot(function (dataUrl, screenshotTime) {
-          storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.BEGINNING_OF_CAPTURE);
-        });
+        // takeScreenshot(function (dataUrl, screenshotTime) {
+        //   storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.BEGINNING_OF_CAPTURE);
+        // });
+        takeAndSaveScreenshot(EventCaptureType.START_CAPTURE);
         chrome.tabs.sendMessage(tab.id, { action: "startCapture" });
       });
       break;
     case "stopCapture":
       if (isCapturing) {
         captureSession.label = request.label || captureSession.label;
-        // Send message to content.js to stop capturing
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
           let activeTab = tabs[0];
           chrome.tabs.sendMessage(activeTab.id, { action: "stopCapture" }, function (response) {
             if (response && response.status === 'capture stopped') {
               captureSession.endTime = new Date().toISOString();
-              takeScreenshot(function (dataUrl, screenshotTime) {
-                storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.END_OF_CAPTURE);
-                // Fetch the existing captureSessions array, add the new session to it, and save it back
+              takeAndSaveScreenshot(EventCaptureType.END_OF_CAPTURE, {}, function () {
                 chrome.storage.local.get({ captureSessions: [] }, function (result) {
                   let sessions = result.captureSessions;
                   sessions.push(captureSession);
                   chrome.storage.local.set({ captureSessions: sessions }, function () {
                     console.log('Capture sessions saved:', sessions);
-                    // Reset the captureSession after ensuring it's saved
                     resetCaptureMetadata();
                     sendResponse({ status: 'capture ended', session: captureSession });
                   });
                 });
-
               });
             }
           });
@@ -283,21 +302,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log('No active capturing session to stop.');
       }
       break;
+
     case "captureEvent":
       if (isCapturing) {
         switch (request.interactionType) {
-          case "click":
+          case EventCaptureType.CLICK:
             resetNextTypingScreenshotCount();
             // Take a screenshot when a click event is captured
             addEventToCaptureSession({
-              type: "click",
+              type: EventCaptureType.CLICK,
               x: request.x,
               y: request.y,
               time: request.time,
               trigger: "user"
             });
             break;
-          case "keyInput":
+          case EventCaptureType.KEY_INPUT:
 
             // if we're in the middle of typing, we don't need to take a screenshot
             // the final state of text is captured either when text is out of focus (TODO), 
@@ -308,7 +328,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             typeCount += 1;
 
             addEventToCaptureSession({
-              type: "keyInput",
+              type: EventCaptureType.KEY_INPUT,
               value: request.value,
               time: request.time,
               trigger: "user"
@@ -323,9 +343,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             //   });
             // }
             break;
-          case "paste":
+          case EventCaptureType.PASTE:
             addEventToCaptureSession({
-              type: "paste",
+              type: EventCaptureType.PASTE,
               value: request.value,
               trigger: "user"
             });
