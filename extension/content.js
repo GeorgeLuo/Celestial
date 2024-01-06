@@ -84,7 +84,6 @@ function handleScroll(event) {
       scrollY: window.scrollY,
       time: new Date().toISOString()
     };
-    // Instead of directly calling chrome.runtime.sendMessage, we pass the event data to debounce function
   }
 }
 
@@ -95,7 +94,7 @@ const debouncedHandleScroll = debounce(function() {
   }
 }, 200);
 
-// Add beforeunload event listener to ensure pending click is sent before navigation
+// Add beforeunload event listener to ensure pending event is sent before navigation
 window.addEventListener('beforeunload', function(event) {
   if (pendingEvent) {
     chrome.runtime.sendMessage({ ...pendingEvent, eventBeforeUnload: true });
@@ -130,8 +129,8 @@ function enableCaptureListeners() {
   document.addEventListener('keydown', handleTextInput, true);
   document.addEventListener('paste', handlePasteFromClipboard);
   window.addEventListener('scroll', function(event) {
-    handleScroll(event); // This sets the pendingEvent
-    debouncedHandleScroll(); // This starts the debounce process
+    handleScroll(event);
+    debouncedHandleScroll();
   }, true);}
 
 function playEvent(event) {
