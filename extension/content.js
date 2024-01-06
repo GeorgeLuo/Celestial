@@ -62,37 +62,77 @@ function handlePasteFromClipboard(event) {
   }
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// The original handleScroll function
+function handleScroll(event) {
+  if (capturing) {
+    pendingEvent = {
+      action: "captureEvent",
+      interactionType: "scroll",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+      time: new Date().toISOString()
+    };
+    // Instead of directly calling chrome.runtime.sendMessage, we pass the event data to debounce function
+  }
+}
+
+const debouncedHandleScroll = debounce(function() {
+  if (pendingEvent && pendingEvent.interactionType === "scroll") {
+    chrome.runtime.sendMessage(pendingEvent);
+    pendingEvent = null; // Clear the pendingEvent after sending
+  }
+}, 200);
+
 // Add beforeunload event listener to ensure pending click is sent before navigation
-window.addEventListener('beforeunload', function (event) {
+window.addEventListener('beforeunload', function(event) {
   if (pendingEvent) {
     chrome.runtime.sendMessage({ ...pendingEvent, eventBeforeUnload: true });
     pendingEvent = null;
   }
 }, false);
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === "startCapture") {
     capturing = true;
     enableCaptureListeners();
   } else if (request.action === "stopCapture") {
     capturing = false;
-    document.removeEventListener('mousedown', handleDocumentClick);
-    document.removeEventListener('keydown', handleTextInput, true);
+    disableCaptureListeners();
     sendResponse({ status: 'capture stopped' });
   } else if (request.action === "playEvent") {
     playEvent(request.event);
   }
-  // else if (request.action === "replayFlow") {
-  //   replayFlow(request.flowData);
-  // } 
 });
+
+function disableCaptureListeners() {
+  console.log("disableCaptureListeners");
+  document.removeEventListener('mousedown', handleDocumentClick);
+  document.removeEventListener('keydown', handleTextInput, true);
+  document.removeEventListener('paste', handlePasteFromClipboard);
+  window.removeEventListener('scroll', debouncedHandleScroll, true);
+}
 
 function enableCaptureListeners() {
   console.log("enableCaptureListeners");
   document.addEventListener('mousedown', handleDocumentClick);
   document.addEventListener('keydown', handleTextInput, true);
   document.addEventListener('paste', handlePasteFromClipboard);
-}
+  window.addEventListener('scroll', function(event) {
+    handleScroll(event); // This sets the pendingEvent
+    debouncedHandleScroll(); // This starts the debounce process
+  }, true);}
 
 function playEvent(event) {
   console.log("playEvent", event)
@@ -138,15 +178,12 @@ function simulateInput(value) {
         activeElement.dispatchEvent(event);
       }
     }
-  } else
-    // Send the string to the currently active/focused element
-    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-      // Append the incoming string to the existing content
-      activeElement.value += value;
-      // Dispatch the input event to trigger change handlers on the element
-      const event = new Event('input', { bubbles: true });
-      activeElement.dispatchEvent(event);
-    } else {
-      console.warn('simulateInput: No input field focused.');
-    }
+  } else if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+    activeElement.value += value;
+    // Dispatch the input event to trigger change handlers on the element
+    const event = new Event('input', { bubbles: true });
+    activeElement.dispatchEvent(event);
+  } else {
+    console.warn('simulateInput: No input field focused.');
+  }
 }

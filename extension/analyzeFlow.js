@@ -49,8 +49,28 @@ function createHumanReadableLabel(screenshotData) {
         return label;
     } else if (screenshotData.label === 'paste') {
         return `paste text "${screenshotData.values.data}"`;
+    } else if (screenshotData.label === 'scroll') {
+        const position = determineScrollPosition(screenshotData.values);
+        return `scroll to ${position}`;
     }
     return screenshotData.label;
+}
+
+// Helper function to determine the scroll position in human-readable terms
+function determineScrollPosition(values) {
+    const topThreshold = 0.2; // Top 20% of the page
+    const bottomThreshold = 0.8; // Bottom 20% of the page
+    // You would typically need the total height of the page to calculate this accurately.
+    // For this example, we'll assume this information is already available in our values object
+    const pageHeight = values.pageHeight;
+    const scrollPositionPercentage = values.scrollY / pageHeight;
+    if (scrollPositionPercentage < topThreshold) {
+        return 'the top of the page';
+    } else if (scrollPositionPercentage >= topThreshold && scrollPositionPercentage <= bottomThreshold) {
+        return 'the middle of the page';
+    } else {
+        return 'the bottom of the page';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {

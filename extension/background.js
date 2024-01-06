@@ -65,7 +65,8 @@ const EventCaptureType = {
   CLICK: 'click',
   KEY_INPUT: 'keyInput',
   START_CAPTURE: 'startCapture',
-  END_OF_CAPTURE: 'endOfCapture'
+  END_OF_CAPTURE: 'endOfCapture',
+  SCROLL: 'scroll'
 };
 
 function addEventToCaptureSession(event) {
@@ -85,6 +86,10 @@ function addEventToCaptureSession(event) {
       break;
     case EventCaptureType.PASTE:
       values = { data: event.value };
+      break;
+    case EventCaptureType.SCROLL:
+      values = { scrollX: event.scrollX, scrollY: event.scrollY, 
+        pageHeight: captureSession.tabDimensions.height, pageWidth: captureSession.tabDimensions.width };
       break;
   }
   if (attemptScreenshot) takeAndSaveScreenshot(event.type, values = values);
@@ -288,6 +293,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             addEventToCaptureSession({
               type: EventCaptureType.PASTE,
               value: request.value,
+              trigger: "user"
+            });
+            break;
+          case EventCaptureType.SCROLL:
+            addEventToCaptureSession({
+              type: EventCaptureType.SCROLL,
+              scrollX: request.scrollX,
+              scrollY: request.scrollY,
               trigger: "user"
             });
             break;
