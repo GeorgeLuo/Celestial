@@ -76,26 +76,55 @@ function determineScrollPosition(values) {
 function exportModifiedFlow(includeImages=true) {
     var flowData = fetchFlowData();
     if (flowData) {
-        var modifiedScreenshots = flowData.screenshots.map(function(screenshotData, index) {
-            var screenshotDiv = document.querySelectorAll('.screenshotDiv')[index];
-            var inputElement = screenshotDiv.querySelector('.screenshotLabel');
-            var newLabel = inputElement.value;
-            var modifiedScreenshot = {
-                ...screenshotData,
-                label: newLabel 
-            };
-            // Conditionally include dataUrl based on the includeImages flag
-            if (!includeImages) {
-                delete modifiedScreenshot.dataUrl;
-            }
-            return modifiedScreenshot;
+        // Create a clone of flowData without screenshots dataUrls.
+        var exportFlow = {
+            ...flowData,
+            screenshots: flowData.screenshots.map(s => ({ ...s, dataUrl: undefined }))
+        };
+
+        // Initialize the JSZip instance
+        var zip = new JSZip();
+
+        // Add the JSON file to the zip
+        zip.file("flow.json", JSON.stringify(exportFlow, null, 2));
+        
+        if (includeImages) {
+            // Create a folder within the zip for screenshots
+            var imgFolder = zip.folder("screenshots");
+            
+            // Add images as separate files in the screenshots folder
+            flowData.screenshots.forEach(screenshot => {
+                // Extract the image type and file content from the dataUrl
+                var base64Data = screenshot.dataUrl.split(';base64,').pop();
+                var imgData = atob(base64Data);
+                var imgArray = new Uint8Array(imgData.length);
+                
+                for (var i = 0; i < imgData.length; i++) {
+                    imgArray[i] = imgData.charCodeAt(i);
+                }
+                
+                // Use label as file name, replacing characters that are invalid in filenames
+                var fileName = screenshot.label.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".png";
+
+                // Add the image file to the screenshots folder in the zip
+                imgFolder.file(fileName, imgArray, { base64: true });
+            });
+        }
+        
+        // Generate the zip file and trigger the download
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            // Use FileSaver or similar library to save the file
+            saveAs(content, "exportedFlow.zip");
         });
-        var exportName = includeImages ? 'modifiedFlow' : 'modifiedFlowWithoutImages';
-        downloadObjectAsJson(modifiedScreenshots, exportName);
     } else {
         console.error('Flow data is not available for export.');
     }
 }
+
+// Assuming you have a button with id `exportFlowWithImages` in your HTML
+document.getElementById('exportModifiedFlow').addEventListener('click', function() {
+    exportModifiedFlow(true); // Call the function with true to include images
+});
 
 function downloadObjectAsJson(exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
@@ -106,10 +135,6 @@ function downloadObjectAsJson(exportObj, exportName) {
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
 }
-
-document.getElementById('exportModifiedFlow').addEventListener('click', function() {
-    exportModifiedFlow(includeImages=true); // Call the function with false to exclude images
-});
 
 document.getElementById('exportModifiedFlowsWithoutImages').addEventListener('click', function() {
     exportModifiedFlow(includeImages=false); // Call the function with false to exclude images
