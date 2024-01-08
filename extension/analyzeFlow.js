@@ -73,20 +73,25 @@ function determineScrollPosition(values) {
     }
 }
 
-function exportModifiedFlow() {
+function exportModifiedFlow(includeImages=true) {
     var flowData = fetchFlowData();
     if (flowData) {
-        var modifiedScreenshots = [];
-        var screenshotDivs = document.querySelectorAll('.screenshotDiv');
-        screenshotDivs.forEach(function(divElement, index) {
-            var inputElement = divElement.querySelector('.screenshotLabel');
+        var modifiedScreenshots = flowData.screenshots.map(function(screenshotData, index) {
+            var screenshotDiv = document.querySelectorAll('.screenshotDiv')[index];
+            var inputElement = screenshotDiv.querySelector('.screenshotLabel');
             var newLabel = inputElement.value;
-            modifiedScreenshots.push({
-                ...flowData.screenshots[index],
+            var modifiedScreenshot = {
+                ...screenshotData,
                 label: newLabel 
-            });
+            };
+            // Conditionally include dataUrl based on the includeImages flag
+            if (!includeImages) {
+                delete modifiedScreenshot.dataUrl;
+            }
+            return modifiedScreenshot;
         });
-        downloadObjectAsJson(modifiedScreenshots, 'modifiedFlow');
+        var exportName = includeImages ? 'modifiedFlow' : 'modifiedFlowWithoutImages';
+        downloadObjectAsJson(modifiedScreenshots, exportName);
     } else {
         console.error('Flow data is not available for export.');
     }
@@ -102,8 +107,13 @@ function downloadObjectAsJson(exportObj, exportName) {
     downloadAnchorNode.remove();
 }
 
-document.getElementById('exportModifiedFlow').addEventListener('click', exportModifiedFlow);
+document.getElementById('exportModifiedFlow').addEventListener('click', function() {
+    exportModifiedFlow(includeImages=true); // Call the function with false to exclude images
+});
 
+document.getElementById('exportModifiedFlowsWithoutImages').addEventListener('click', function() {
+    exportModifiedFlow(includeImages=false); // Call the function with false to exclude images
+});
 
 document.addEventListener('DOMContentLoaded', function () {
     var flowData = fetchFlowData();
