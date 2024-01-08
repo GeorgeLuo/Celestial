@@ -73,12 +73,46 @@ function determineScrollPosition(values) {
     }
 }
 
+function exportModifiedFlow() {
+    var flowData = fetchFlowData();
+    if (flowData) {
+        var modifiedScreenshots = [];
+        var screenshotDivs = document.querySelectorAll('.screenshotDiv');
+        screenshotDivs.forEach(function(divElement, index) {
+            var inputElement = divElement.querySelector('.screenshotLabel');
+            var newLabel = inputElement.value;
+            modifiedScreenshots.push({
+                ...flowData.screenshots[index],
+                label: newLabel 
+            });
+        });
+        downloadObjectAsJson(modifiedScreenshots, 'modifiedFlow');
+    } else {
+        console.error('Flow data is not available for export.');
+    }
+}
+
+function downloadObjectAsJson(exportObj, exportName) {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", exportName + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+document.getElementById('exportModifiedFlow').addEventListener('click', exportModifiedFlow);
+
+
 document.addEventListener('DOMContentLoaded', function () {
     var flowData = fetchFlowData();
     if (flowData) {
-        displayImagesWithLabels(flowData);  // Updated function call
+        displayImagesWithLabels(flowData);
         console.log(flowData);
     } else {
         console.error('Flow data is not available.');
     }
+    // Initialize the Export Modified Flow button
+    document.getElementById('exportModifiedFlow').addEventListener('click', exportModifiedFlow);
 });

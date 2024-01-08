@@ -6,16 +6,19 @@ let isReplaying = false;
 
 let isCapturing = false;
 
+// typing state
+
 let fullKeyInputSequence = []
 let typeCount = 0;
 let nextTypingScreenshotCount = 6;
+let heldKeys = {};
 
 function setNextTypingScreenshotCount() {
   nextTypingScreenshotCount *= 2;
   console.log(nextTypingScreenshotCount);
 }
 
-function resetNextTypingScreenshotCount() {
+function resetTypingState() {
   if (fullKeyInputSequence.length > 0 && captureSession.screenshots.length > 0) {
     const lastScreenshot = captureSession.screenshots[captureSession.screenshots.length - 1];
     lastScreenshot.values.fullKeyInputSequence = [...fullKeyInputSequence];
@@ -24,6 +27,8 @@ function resetNextTypingScreenshotCount() {
   fullKeyInputSequence = [];
   typeCount = 0;
   nextTypingScreenshotCount = 6;
+  
+  heldKeys = {};
 }
 
 let knownUrl = "";
@@ -43,7 +48,7 @@ let captureSession = {
 function resetCaptureMetadata() {
   isCapturing = false;
 
-  resetNextTypingScreenshotCount();
+  resetTypingState();
 
   knownUrl = "";
   screenshotId = 0;
@@ -276,7 +281,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (isCapturing) {
         switch (request.interactionType) {
           case EventCaptureType.CLICK:
-            resetNextTypingScreenshotCount();
+            resetTypingState();
             // Take a screenshot when a click event is captured
             addEventToCaptureSession({
               type: EventCaptureType.CLICK,
@@ -339,7 +344,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "contentReloaded":
       if (isCapturing) {
-        resetNextTypingScreenshotCount();
+        resetTypingState();
         if (knownUrl !== request.currentUrl) {
           addEventToCaptureSession({
             type: "urlChange",

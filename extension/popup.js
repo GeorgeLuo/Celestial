@@ -1,3 +1,4 @@
+
 // button handlers
 
 document.getElementById('startCapture').addEventListener('click', function () {
@@ -44,7 +45,8 @@ document.getElementById('replayFlow').addEventListener('click', function () {
 document.getElementById('exportFlows').addEventListener('click', function () {
   chrome.storage.local.get(['captureSessions'], function (result) {
     var capturedFlows = result.captureSessions || [];
-    downloadObjectAsJson(capturedFlows, 'capturedFlows');
+    var dataToSave = { captureSessions: capturedFlows };
+    downloadObjectAsJson(dataToSave, 'capturedFlows');
   });
 });
 
@@ -107,7 +109,6 @@ function populateCapturedFlowsDropdown() {
     });
   });
 }
-
 
 function downloadObjectAsJson(exportObj, exportName) {
   var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));

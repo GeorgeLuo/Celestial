@@ -5,7 +5,7 @@ let capturing = false;
 let replaying = false;
 let pendingEvent = null;
 
-let typingState = {isTyping: false, typingCount: 0};
+let typingState = { isTyping: false, typingCount: 0 };
 
 chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.location.href, time: new Date().toISOString() });
 
@@ -78,6 +78,8 @@ function handlePasteFromClipboard(event) {
   }
 }
 
+// start scroll logic
+
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -103,22 +105,40 @@ function handleScroll(event) {
   }
 }
 
-const debouncedHandleScroll = debounce(function() {
+const debouncedHandleScroll = debounce(function () {
   if (pendingEvent && pendingEvent.interactionType === "scroll") {
     chrome.runtime.sendMessage(pendingEvent);
     pendingEvent = null; // Clear the pendingEvent after sending
   }
 }, 200);
 
+// end scroll logic
+
+// Add this inside enableCaptureListeners function in content.js
+document.addEventListener('keyup', handleSpecialKeyUp);
+
+// Add this outside of the enableCaptureListeners function in content.js
+function handleSpecialKeyUp(event) {
+  if (capturing && (event.key === 'Shift' || event.key === 'Control')) {
+    pendingEvent = {
+      action: "captureEvent",
+      interactionType: "specialKeyUp",
+      value: event.key,
+      time: new Date().toISOString()
+    };
+    chrome.runtime.sendMessage(pendingEvent);
+  }
+}
+
 // Add beforeunload event listener to ensure pending event is sent before navigation
-window.addEventListener('beforeunload', function(event) {
+window.addEventListener('beforeunload', function (event) {
   if (pendingEvent) {
     chrome.runtime.sendMessage({ ...pendingEvent, eventBeforeUnload: true });
     pendingEvent = null;
   }
 }, false);
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "startCapture") {
     capturing = true;
     enableCaptureListeners();
@@ -139,6 +159,7 @@ function disableCaptureListeners() {
   document.removeEventListener('copy', handleCopyOrCut);
   document.removeEventListener('cut', handleCopyOrCut);
   window.removeEventListener('scroll', debouncedHandleScroll, true);
+  document.removeEventListener('keyup', handleSpecialKeyUp);
 }
 
 function enableCaptureListeners() {
@@ -148,10 +169,12 @@ function enableCaptureListeners() {
   document.addEventListener('paste', handlePasteFromClipboard);
   document.addEventListener('copy', handleCopyOrCut);
   document.addEventListener('cut', handleCopyOrCut);
-  window.addEventListener('scroll', function(event) {
+  window.addEventListener('scroll', function (event) {
     handleScroll(event);
     debouncedHandleScroll();
-  }, true);}
+  }, true);
+  document.addEventListener('keyup', handleSpecialKeyUp);
+}
 
 function playEvent(event) {
   console.log("playEvent", event)
