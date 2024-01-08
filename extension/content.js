@@ -47,6 +47,22 @@ function handleTextInput(event) {
   }
 }
 
+function handleCopyOrCut(event) {
+  const actionType = event.type === 'copy' ? 'copy' : 'cut';
+  const clipboardData = event.clipboardData;
+  let copiedText = clipboardData.getData('text');
+  console.log(`${actionType} text:`, copiedText);
+  if (capturing) {
+    pendingEvent = {
+      action: "captureEvent",
+      interactionType: actionType,
+      value: copiedText,
+      time: new Date().toISOString()
+    };
+    chrome.runtime.sendMessage(pendingEvent);
+  }
+}
+
 function handlePasteFromClipboard(event) {
   const clipboardData = event.clipboardData;
   let pastedText = clipboardData.getData('text');
@@ -120,6 +136,8 @@ function disableCaptureListeners() {
   document.removeEventListener('mousedown', handleDocumentClick);
   document.removeEventListener('keydown', handleTextInput, true);
   document.removeEventListener('paste', handlePasteFromClipboard);
+  document.removeEventListener('copy', handleCopyOrCut);
+  document.removeEventListener('cut', handleCopyOrCut);
   window.removeEventListener('scroll', debouncedHandleScroll, true);
 }
 
@@ -128,6 +146,8 @@ function enableCaptureListeners() {
   document.addEventListener('mousedown', handleDocumentClick);
   document.addEventListener('keydown', handleTextInput, true);
   document.addEventListener('paste', handlePasteFromClipboard);
+  document.addEventListener('copy', handleCopyOrCut);
+  document.addEventListener('cut', handleCopyOrCut);
   window.addEventListener('scroll', function(event) {
     handleScroll(event);
     debouncedHandleScroll();
