@@ -17,3 +17,4 @@ Events and screenshots should agree and a timeline should be possible to constru
 - key input
 - click
 - copy/cut/paste via right click selection
+- scroll
