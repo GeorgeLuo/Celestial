@@ -96,7 +96,9 @@ function exportModifiedFlow(includeImages=true) {
                 for (var i = 0; i < imgData.length; i++) {
                     imgArray[i] = imgData.charCodeAt(i);
                 }
-                var fileName = `${screenshot.label.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+                const date = new Date(screenshot.time);
+
+                var fileName = `${Math.floor(date.getTime() / 1000)}_${screenshot.screenshotId}.png`;
                 imgFolder.file(fileName, imgArray, { base64: true });
             });
             zip.generateAsync({type:"blob"}).then(function(content) {
