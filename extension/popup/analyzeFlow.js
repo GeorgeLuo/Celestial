@@ -5,6 +5,7 @@ function fetchFlowData() {
     if (flowData) {
         flowData = JSON.parse(flowData);
         flowData.screenshots = flowData.screenshots.filter(function (screenshot) {
+            console.log(screenshot.label);
             return screenshot.label !== 'keyInput' || screenshot.values.endKeyInput === true;
         });
         return flowData;
