@@ -84,7 +84,12 @@ function exportModifiedFlow(includeImages=true) {
             var zip = new JSZip();
             zip.file("flow.json", JSON.stringify(flowData, null, 2));
             var imgFolder = zip.folder("screenshots");
+            console.log(flowData.screenshots);
             flowData.screenshots.forEach(screenshot => {
+                if (typeof screenshot.dataUrl === 'undefined') {
+                    console.log('no screenshot');
+                    return;
+                }
                 var base64Data = screenshot.dataUrl.split(';base64,').pop();
                 var imgData = atob(base64Data);
                 var imgArray = new Uint8Array(imgData.length);
