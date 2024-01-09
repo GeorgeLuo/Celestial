@@ -26,7 +26,7 @@ function displayImagesWithLabels(flow) {
         labelInput.className = 'screenshotLabel';
         labelInput.value = createHumanReadableLabel(screenshotData);
         labelInput.dataset.index = index;
-        
+
         labelInput.addEventListener('change', function (event) {
             var newIndex = event.target.dataset.index;
             flowData.screenshots[newIndex].modifiedLabel = event.target.value;
@@ -78,14 +78,16 @@ function determineScrollPosition(values) {
     }
 }
 
-function exportModifiedFlow(includeImages=true) {
+function exportModifiedFlow(includeImages = true) {
     if (flowData) {
         if (includeImages) {
+            let cleanFlowData = JSON.parse(JSON.stringify(flowData));
+
             var zip = new JSZip();
-            zip.file("flow.json", JSON.stringify(flowData, null, 2));
+            zip.file("flow.json", JSON.stringify(cleanFlowData, null, 2));
             var imgFolder = zip.folder("screenshots");
-            console.log(flowData.screenshots);
-            flowData.screenshots.forEach(screenshot => {
+
+            cleanFlowData.screenshots.forEach(screenshot => {
                 if (typeof screenshot.dataUrl === 'undefined') {
                     console.log('no screenshot');
                     return;
@@ -99,17 +101,23 @@ function exportModifiedFlow(includeImages=true) {
                 const date = new Date(screenshot.time);
 
                 var fileName = `${Math.floor(date.getTime() / 1000)}_${screenshot.screenshotId}.png`;
+                screenshot.dataUrl = undefined;
+                screenshot.filename = fileName;
+
                 imgFolder.file(fileName, imgArray, { base64: true });
             });
-            zip.generateAsync({type:"blob"}).then(function(content) {
+
+            zip.file("flow.json", JSON.stringify(cleanFlowData, null, 2));
+
+            zip.generateAsync({ type: "blob" }).then(function (content) {
                 saveAs(content, "exportedFlow.zip");
             });
         } else {
-            var exportObj = {
+            var cleanFlowData = {
                 ...flowData,
                 screenshots: flowData.screenshots.map(s => ({ ...s, dataUrl: undefined }))
             };
-            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanFlowData));
             var downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "exportedFlow.json");
@@ -122,7 +130,7 @@ function exportModifiedFlow(includeImages=true) {
     }
 }
 
-document.getElementById('exportModifiedFlow').addEventListener('click', function() {
+document.getElementById('exportModifiedFlow').addEventListener('click', function () {
     exportModifiedFlow(true);
 });
 
@@ -136,8 +144,8 @@ function downloadObjectAsJson(exportObj, exportName) {
     downloadAnchorNode.remove();
 }
 
-document.getElementById('exportModifiedFlowsWithoutImages').addEventListener('click', function() {
-    exportModifiedFlow(includeImages=false);
+document.getElementById('exportModifiedFlowsWithoutImages').addEventListener('click', function () {
+    exportModifiedFlow(includeImages = false);
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -150,4 +158,13 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('Flow data is not available.');
     }
     document.getElementById('exportModifiedFlow').addEventListener('click', exportModifiedFlow);
+
+    var namedLabelInput = document.getElementById('namedFlowLabel');
+    if (flowData && flowData.label) {
+        namedLabelInput.value = flowData.label;
+    }
+
+    namedLabelInput.addEventListener('change', function (event) {
+        flowData.namedLabel = event.target.value;
+    });
 });
