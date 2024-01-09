@@ -24,8 +24,11 @@ function displayImagesWithLabels(flow) {
         var labelInput = document.createElement('input');
         labelInput.type = 'text';
         labelInput.className = 'screenshotLabel';
-        labelInput.value = createHumanReadableLabel(screenshotData);
+
+        let displayLabel = createHumanReadableLabel(screenshotData);
+        labelInput.value = displayLabel;
         labelInput.dataset.index = index;
+        flowData.screenshots[index].generatedLabel = displayLabel;
 
         labelInput.addEventListener('change', function (event) {
             var newIndex = event.target.dataset.index;
