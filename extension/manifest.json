@@ -15,7 +15,7 @@
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background/background.js"
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
@@ -23,12 +23,12 @@
         "<all_urls>"
       ],
       "js": [
-        "content/content.js"
+        "src/content/content.js"
       ]
     }
   ],
   "action": {
-    "default_popup": "popup/popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "images/icon16.png",
       "48": "images/icon48.png",
