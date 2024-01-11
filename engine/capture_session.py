@@ -86,6 +86,18 @@ class SessionCaptureIterator:
             self.index = previous_index
             return self.data[previous_index]
         return None
+    
+    def peek_left(self):
+        previous_index = self._find_previous_index()
+        if previous_index is not None:
+            return self.data[previous_index]
+        return None
+
+    def peek_right(self):
+        next_index = self._find_next_index()
+        if next_index is not None:
+            return self.data[next_index]
+        return None
 
     def current_data(self):
         '''return the current object at index matching iterator_type'''
@@ -93,31 +105,27 @@ class SessionCaptureIterator:
             return self.data[self.index]
         return None
 
-    def context(self):
+    def context(self, include_all_types=False):
         '''return a list of data objects from the previous item of the same iterator type through 
-        to the next item of the same iterator type'''
-
+            to the next item of the same iterator type. If include_all_types is True, include all data objects 
+            in range, regardless of type.'''
         previous_index = self._find_previous_index()
         next_index = self._find_next_index()
-
+        
         context_data = []
-        if previous_index is not None:
-            context_data.append(self.data[previous_index])
-
-        current_data = self.current_data()
-        if current_data is not None:
-            context_data.append(current_data)
-
-        if next_index is not None:
-            context_data.append(self.data[next_index])
-
+        # Define the start of the context, which should be the first object or after the previous object of matching type
+        start_index = 0 if previous_index is None else previous_index + 1
+        # Define the end of the context, which should include the next object of matching type if possible
+        end_index = len(self.data) if next_index is None else next_index + 1
+        # Get the objects in the defined range
+        for i in range(start_index, end_index):
+            if include_all_types or self.data[i]['datatype'] == self.iterator_type.value:
+                context_data.append(self.data[i])
         return context_data
-
 
 combined_data_sorted = extract_capture_session('testflow.zip')
 
 iterator = SessionCaptureIterator(combined_data_sorted, SessionCaptureIterator.IteratorType.EVENT)
 
 print(iterator.current_data())
-print(iterator.next())
-print(iterator.next())
+print(iterator.context(False))
