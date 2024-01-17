@@ -4,7 +4,7 @@ import os
 import zipfile
 import json
 
-app = Flask(__name__, static_folder='session-console/build')
+app = Flask(__name__, static_folder='session-visualizer/build')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'zip'}
 app.secret_key = 'super_secret_key'  # Change this to a random secret key
