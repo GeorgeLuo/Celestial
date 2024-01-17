@@ -1,45 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-function FileUpload() {
-  const [selectedFile, setSelectedFile] = useState(null);
+const FileUploadAndDisplay = () => {
+  const [flowData, setFlowData] = useState(null);
 
+  // Replace the handleFileChange function with the following
   const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
+    const file = event.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
 
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
-    if (!selectedFile) {
-      alert('Please select a file to upload');
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      const response = await fetch('/upload', {
-        method: 'POST',
+      fetch("/upload", {
+        // Adjust the URL if needed to match your server endpoint
+        method: "POST",
         body: formData,
-      });
-      
-      if (response.ok) {
-        alert('File successfully uploaded');
-      } else {
-        alert('File upload failed');
-      }
-    } catch (error) {
-      alert('Error while uploading file');
-      console.error(error);
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setFlowData(data);
+        })
+        .catch((error) => {
+          console.error("Error uploading the file:", error);
+        });
     }
   };
 
   return (
-    <form onSubmit={handleFormSubmit}>
-      <input type="file" accept='.zip' onChange={handleFileChange} />
-      <button type="submit">Upload</button>
-    </form>
+    <div>
+      <input type="file" onChange={handleFileChange} />
+      {flowData && (
+        <div>
+          <h3>Flow JSON:</h3>
+          <pre>{JSON.stringify(flowData, null, 2)}</pre>
+        </div>
+      )}
+    </div>
   );
-}
+};
 
-export default FileUpload;
+export default FileUploadAndDisplay;
