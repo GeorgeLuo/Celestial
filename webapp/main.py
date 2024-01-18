@@ -4,6 +4,12 @@ import os
 import zipfile
 import json
 
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from engine.capture_session import extract_capture_session
+
 app = Flask(__name__, static_folder='session-visualizer/build')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'zip'}
@@ -32,25 +38,14 @@ def upload_file():
     zip_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(zip_path)
 
-    flow_data = {}
-
-    # Extract the zip file
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-      zip_ref.extractall(app.config['UPLOAD_FOLDER'])
-
-      # Search for the flow.json file in the zip
-      for file in zip_ref.namelist():
-        if file.endswith('flow.json'):
-          with open(os.path.join(app.config['UPLOAD_FOLDER'], file),
-                    'r') as json_file:
-            flow_data = json.load(json_file)
-            break
+    # Use extract_capture_session to process the .zip file
+    combined_data_sorted = extract_capture_session(zip_path)
 
     # Clean up uploaded zip file
     os.remove(zip_path)
 
-    # Return the flow.json content
-    return jsonify(flow_data)
+    # Return the combined sorted data instead of just flow_data
+    return jsonify(combined_data_sorted)
   else:
     flash('Invalid file type')
     return redirect(request.url)
