@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 
-const FileUploadAndDisplay = ({ onUpload }) => {
+const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
   const [flowData, setFlowData] = useState(null);
+  const [selectedBoxIndex, setSelectedBoxIndex] = useState(null);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -23,30 +24,33 @@ const FileUploadAndDisplay = ({ onUpload }) => {
     }
   };
 
-  const handleBoxClick = (boxData) => {
+  const handleBoxClick = (boxData, index) => {
     console.log("Box clicked:", boxData);
-    // Implement what should happen when a box is clicked
+    setSelectedBoxIndex(index);
+    onObjectClick(boxData);
   };
 
   return (
-    <div>
+    <div style={{ textAlign: "center" }}>
       <input type="file" onChange={handleFileChange} />
       <div>
         {flowData &&
           flowData.map((data, index) => (
-            <div
+            <pre
               key={index}
-              onClick={() => handleBoxClick(data)}
+              onClick={() => handleBoxClick(data, index)}
               style={{
                 padding: "10px",
                 margin: "10px",
-                border: "1px solid #ddd",
+                border: selectedBoxIndex === index ? "2px solid blue" : "1px solid #ddd",
                 display: "inline-block",
                 cursor: "pointer",
+                backgroundColor: selectedBoxIndex === index ? "#e6e6e6" : "",
+                textAlign: "left" // Ensure text is left-aligned inside the <pre> element
               }}
             >
-              {JSON.stringify(data)}
-            </div>
+              {JSON.stringify(data, null, 2)}
+            </pre>
           ))}
       </div>
     </div>

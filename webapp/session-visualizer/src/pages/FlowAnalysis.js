@@ -4,22 +4,36 @@ import ImageSequenceDownloader from "../components/ImageSequenceDownloader";
 
 const FlowAnalysis = () => {
   const [imageList, setImageList] = useState([]);
+  const [focusedObject, setFocusedObject] = useState(null); // Variable to track the focused object
 
-  // This function is a placeholder for whatever logic you have to set imageList
   const handleSetImageList = (newImageList) => {
     setImageList(newImageList);
+    // Assuming the first object is the one in focus by default
+    setFocusedObject(newImageList[0] || null);
   };
 
-  // Assuming you have some way to update the image list once flowData is obtained
-  // You need to connect to the logic that sets flowData when a file is uploaded
+  const handleObjectClick = (object) => {
+    // Update focusedObject when an object from FileUpload is clicked
+    setFocusedObject(object);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
-      <div style={{ flex: 1 }}>
-        <FileUploadAndDisplay onUpload={handleSetImageList} />
+      <div style={{ width: "33.33%", textAlign: "center" }}>
+        <FileUploadAndDisplay onUpload={handleSetImageList} onObjectClick={handleObjectClick} />
       </div>
-      <div style={{ flex: 1 }}>
+      <div style={{ width: "66.67%", textAlign: "center" }}>
         <ImageSequenceDownloader imageList={imageList} />
+        {/* Below is a placeholder to show the focused object. Implement as necessary. */}
+        {focusedObject && (
+          <div>
+            <h3>Focused Object:</h3>
+            {/* Inline styling for the <pre> tag to maintain JSON formatting */}
+            <pre style={{ textAlign: "left", display: "inline-block", textJustify: "auto" }}>
+              {JSON.stringify(focusedObject, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
