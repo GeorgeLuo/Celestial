@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-
-const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
+import React, { useState, useEffect } from "react";
+const FileUploadAndDisplay = ({ onUpload, onObjectFocus, selectedIndex, onSelectedIndexChange }) => {
   const [flowData, setFlowData] = useState(null);
-  const [selectedBoxIndex, setSelectedBoxIndex] = useState(null);
-
+  const [selectedBoxIndex, setSelectedBoxIndex] = useState(selectedIndex || 0);
+  useEffect(() => {
+    setSelectedBoxIndex(selectedIndex);
+  }, [selectedIndex]);
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -16,7 +17,7 @@ const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
         .then((response) => response.json())
         .then((data) => {
           setFlowData(data);
-          onUpload(data); // Assuming there is a prop method to handle the upload
+          onUpload(data); // Triggered after successful upload
         })
         .catch((error) => {
           console.error("Error uploading the file:", error);
@@ -24,11 +25,13 @@ const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
     }
   };
 
-  const handleBoxClick = (boxData, index) => {
-    console.log("Box clicked:", boxData);
+  const handleBoxClick = (index) => {
     setSelectedBoxIndex(index);
-    onObjectClick(boxData);
+    onObjectFocus(index); // Changed from passing boxData to passing index
   };
+
+ // Ensure highlighted textbox stays in sync with the selectedIndex
+  // const isSelected = (index) => index === selectedIndex;
 
   return (
     <div style={{ textAlign: "center" }}>
@@ -38,7 +41,7 @@ const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
           flowData.map((data, index) => (
             <pre
               key={index}
-              onClick={() => handleBoxClick(data, index)}
+              onClick={() => handleBoxClick(index)}
               style={{
                 padding: "10px",
                 margin: "10px",
@@ -46,7 +49,7 @@ const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
                 display: "inline-block",
                 cursor: "pointer",
                 backgroundColor: selectedBoxIndex === index ? "#e6e6e6" : "",
-                textAlign: "left" // Ensure text is left-aligned inside the <pre> element
+                textAlign: "left"
               }}
             >
               {JSON.stringify(data, null, 2)}
@@ -56,5 +59,4 @@ const FileUploadAndDisplay = ({ onUpload, onObjectClick }) => {
     </div>
   );
 };
-
 export default FileUploadAndDisplay;

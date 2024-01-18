@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const ObjectViewer = ({ imageList, onPreviousNext, selectedIndex }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex || 0);
+
+  useEffect(() => {
+    setCurrentImageIndex(selectedIndex);
+  }, [selectedIndex]);
 
   const downloadImage = (imageUrl) => {
     const link = document.createElement("a");
@@ -13,20 +17,38 @@ const ObjectViewer = ({ imageList, onPreviousNext, selectedIndex }) => {
   };
 
   const handleNextImage = () => {
-    onPreviousNext(true); // Pass true for the next image
+    if (currentImageIndex < imageList.length - 1) {
+      const newImageIndex = currentImageIndex + 1;
+      setCurrentImageIndex(newImageIndex);
+      onObjectFocus(newImageIndex);
+    }
   };
+
   const handlePreviousImage = () => {
-    onPreviousNext(false); // Pass false for the previous image
+    if (currentImageIndex > 0) {
+      const newImageIndex = currentImageIndex - 1;
+      setCurrentImageIndex(newImageIndex);
+      onObjectFocus(newImageIndex);
+    }
   };
 
   return (
     <div>
-      <img
-        src={imageList[currentImageIndex]}
-        alt={`image-${currentImageIndex}`}
-      />
-      <button onClick={handlePreviousImage}>{"<"}</button>
-      <button onClick={handleNextImage}>{">"}</button>
+      {imageList[currentImageIndex] && (
+        <>
+          <img
+            src={imageList[currentImageIndex]}
+            alt={`image-${currentImageIndex}`}
+          />
+          <div>
+            <button onClick={handlePreviousImage} disabled={currentImageIndex === 0}>{"<"}</button>
+            <button onClick={handleNextImage} disabled={currentImageIndex === imageList.length - 1}>{">"}</button>
+            <button onClick={() => downloadImage(imageList[currentImageIndex])}>
+              Download Image
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
