@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import FileUploadAndDisplay from "../components/FileUpload";
-import ImageSequenceDownloader from "../components/ImageSequenceDownloader";
+// import ImageSequenceDownloader from "../components/ImageSequenceDownloader";
+import ObjectViewer from "../components/ObjectViewer";
 
 const FlowAnalysis = () => {
   const [imageList, setImageList] = useState([]);
@@ -23,7 +24,7 @@ const FlowAnalysis = () => {
         <FileUploadAndDisplay onUpload={handleSetImageList} onObjectClick={handleObjectClick} />
       </div>
       <div style={{ width: "66.67%", textAlign: "center" }}>
-        <ImageSequenceDownloader imageList={imageList} />
+        <ObjectViewer imageList={imageList} />
         {/* Below is a placeholder to show the focused object. Implement as necessary. */}
         {focusedObject && (
           <div>

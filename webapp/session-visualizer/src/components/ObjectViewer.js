@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const ImageSequenceDownloader = ({ imageList }) => {
+const ObjectViewer = ({ imageList, onPreviousNext, selectedIndex }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const downloadImage = (imageUrl) => {
@@ -13,16 +13,10 @@ const ImageSequenceDownloader = ({ imageList }) => {
   };
 
   const handleNextImage = () => {
-    const newIndex = (currentImageIndex + 1) % imageList.length;
-    downloadImage(imageList[newIndex]);
-    setCurrentImageIndex(newIndex);
+    onPreviousNext(true); // Pass true for the next image
   };
-
   const handlePreviousImage = () => {
-    const newIndex =
-      (currentImageIndex - 1 + imageList.length) % imageList.length;
-    downloadImage(imageList[newIndex]);
-    setCurrentImageIndex(newIndex);
+    onPreviousNext(false); // Pass false for the previous image
   };
 
   return (
@@ -37,4 +31,4 @@ const ImageSequenceDownloader = ({ imageList }) => {
   );
 };
 
-export default ImageSequenceDownloader;
+export default ObjectViewer;
