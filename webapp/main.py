@@ -1,8 +1,5 @@
-from flask import Flask, send_file, send_from_directory, request, redirect, url_for, flash, jsonify
-from werkzeug.utils import secure_filename
+from flask import Flask, send_from_directory, request, redirect, flash, jsonify
 import os
-import zipfile
-import json
 
 import sys
 
@@ -46,8 +43,6 @@ def upload_file():
 
     # Use extract_capture_session to process the .zip file
     combined_data_sorted = extract_capture_session(zip_path)
-
-    # Clean up uploaded zip file
 
     # TODO: figure out how to store these files
     os.remove(zip_path)
