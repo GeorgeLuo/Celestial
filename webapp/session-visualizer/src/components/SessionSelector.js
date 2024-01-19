@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-const FileUploadAndDisplay = ({ onUpload, onObjectFocus, selectedIndex, onSelectedIndexChange }) => {
+const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
+
   const [flowData, setFlowData] = useState(null);
   const [selectedBoxIndex, setSelectedBoxIndex] = useState(selectedIndex || 0);
+
   useEffect(() => {
     setSelectedBoxIndex(selectedIndex);
   }, [selectedIndex]);
@@ -16,8 +18,8 @@ const FileUploadAndDisplay = ({ onUpload, onObjectFocus, selectedIndex, onSelect
       })
         .then((response) => response.json())
         .then((data) => {
-          setFlowData(data);
-          onUpload(data); // Triggered after successful upload
+          setFlowData(data.timeline);
+          onUpload(data.timeline, data.client_session_id); // Triggered after successful upload
         })
         .catch((error) => {
           console.error("Error uploading the file:", error);
@@ -59,4 +61,4 @@ const FileUploadAndDisplay = ({ onUpload, onObjectFocus, selectedIndex, onSelect
     </div>
   );
 };
-export default FileUploadAndDisplay;
+export default SessionSelector;

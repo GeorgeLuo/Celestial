@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, redirect, url_for, flash, jsonify
+from flask import Flask, send_file, send_from_directory, request, redirect, url_for, flash, jsonify
 from werkzeug.utils import secure_filename
 import os
 import zipfile
@@ -9,6 +9,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.capture_session import extract_capture_session
+from session_context import store_session
 
 app = Flask(__name__, static_folder='session-visualizer/build')
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -23,6 +24,12 @@ def allowed_file(filename):
   return '.' in filename and \
          filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+@app.route('/getScreenshot', methods=['GET'])
+def get_screenshot():
+  filename = request.args.get('filename')
+  clientSessionId = request.args.get('clientSessionId')
+  return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], str(clientSessionId), 'screenshots', filename))
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -34,22 +41,22 @@ def upload_file():
     flash('No selected file')
     return redirect(request.url)
   if file and allowed_file(file.filename):
-    filename = secure_filename(file.filename)
-    zip_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(zip_path)
+
+    client_session_id, zip_path = store_session(app.config['UPLOAD_FOLDER'], file)
 
     # Use extract_capture_session to process the .zip file
     combined_data_sorted = extract_capture_session(zip_path)
 
     # Clean up uploaded zip file
+
+    # TODO: figure out how to store these files
     os.remove(zip_path)
 
     # Return the combined sorted data instead of just flow_data
-    return jsonify(combined_data_sorted)
+    return jsonify({'timeline': combined_data_sorted, 'client_session_id': str(client_session_id)})
   else:
     flash('Invalid file type')
     return redirect(request.url)
-
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')

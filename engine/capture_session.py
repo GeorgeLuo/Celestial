@@ -6,10 +6,12 @@ from enum import Enum
 def unpack_capture_session(capture_session_zip):
     '''Unpack the capture session zip and return an array of screenshot metadata objects'''
     with zipfile.ZipFile(capture_session_zip, 'r') as zip_ref:
-        zip_ref.extractall("session_data")
+        extract_dir = os.path.dirname(capture_session_zip)
+        print(extract_dir)
+        zip_ref.extractall(extract_dir)
         for file in zip_ref.namelist():
             if file.endswith('.json'):
-                with open(os.path.join("session_data", file), 'r') as json_file:
+                with open(os.path.join(extract_dir, file), 'r') as json_file:
                     flow_data = json.load(json_file)
                     return flow_data
 
@@ -123,9 +125,9 @@ class SessionCaptureIterator:
                 context_data.append(self.data[i])
         return context_data
 
-combined_data_sorted = extract_capture_session('testflow.zip')
+# combined_data_sorted = extract_capture_session('testflow.zip')
 
-iterator = SessionCaptureIterator(combined_data_sorted, SessionCaptureIterator.IteratorType.EVENT)
+# iterator = SessionCaptureIterator(combined_data_sorted, SessionCaptureIterator.IteratorType.EVENT)
 
-print(iterator.current_data())
-print(iterator.context(False))
+# print(iterator.current_data())
+# print(iterator.context(False))

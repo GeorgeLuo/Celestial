@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from "react";
 
-import FileUploadAndDisplay from "../components/FileUpload";
+import SessionSelector from "../components/SessionSelector";
 import ObjectViewer from "../components/ObjectViewer";
 
 const FlowAnalysis = () => {
+  const [clientSessionId, setClientSessionId] = useState("");
   const [imageList, setImageList] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const handleSetImageList = useCallback((newImageList) => {
+  const startSession = useCallback((newImageList, clientSessionId) => {
+    setClientSessionId(clientSessionId);
     setImageList(newImageList);
   }, []);
 
@@ -18,10 +20,10 @@ const FlowAnalysis = () => {
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
       <div style={{ width: "33.33%", textAlign: "center" }}>
-        <FileUploadAndDisplay onUpload={handleSetImageList} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} />
+        <SessionSelector onUpload={startSession} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} />
       </div>
       <div style={{ width: "66.67%", textAlign: "center" }}>
-        <ObjectViewer imageList={imageList} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} />
+        <ObjectViewer imageList={imageList} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} clientSessionId={clientSessionId}/>
         {imageList[selectedIndex] && (
           <div>
             <h3>Focused Object:</h3>

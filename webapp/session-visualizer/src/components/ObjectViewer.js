@@ -1,11 +1,36 @@
 import React, { useEffect, useState } from "react";
 
-const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex }) => {
+const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex || 0);
 
   useEffect(() => {
     setCurrentImageIndex(selectedIndex);
   }, [selectedIndex]);
+
+  useEffect(() => {
+    const selectedObject = imageList[selectedIndex];
+    if (selectedObject && selectedObject.datatype === 'screenshot') {
+      fetchAndDownloadScreenshot(selectedObject.filename);
+    }
+  }, [imageList, selectedIndex]);
+
+  const fetchAndDownloadScreenshot = (filename) => {
+    fetch(`/getScreenshot?filename=${encodeURIComponent(filename)}&clientSessionId=${encodeURIComponent(clientSessionId)}`)
+      .then((response) => response.blob())
+      .then((blob) => {
+        // Create a link element for downloading
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      })
+      .catch((error) => {
+        console.error('Error fetching the screenshot:', error);
+      });
+  };
 
   const downloadImage = (imageUrl) => {
     const link = document.createElement("a");
