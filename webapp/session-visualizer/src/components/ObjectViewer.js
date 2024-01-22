@@ -6,7 +6,6 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
   const [filterMode, setFilterMode] = useState('screenshot');
 
   useEffect(() => {
-    // Initialize to the first screenshot in the imageList.
     const firstScreenshotIndex = imageList.findIndex(object => object.datatype === 'screenshot');
     if (firstScreenshotIndex !== -1) setCurrentImageIndex(firstScreenshotIndex);
   }, [imageList]);
@@ -17,26 +16,30 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
       if (selectedObject.datatype === 'screenshot' || filterMode === 'hybrid') {
         fetchAndDownloadScreenshot(selectedObject.filename);
       } else if (selectedObject.datatype === 'event') {
+        let screenshotFound = false;
         // Find the most recent screenshot before the event
         for (let i = selectedIndex - 1; i >= 0; i--) {
           if (imageList[i].datatype === 'screenshot') {
             fetchAndDownloadScreenshot(imageList[i].filename);
+            screenshotFound = true;
             break;
           }
         }
+        // If no screenshot is found before the event, keep the image source as it was
       }
     }
-  }, [imageList, selectedIndex, filterMode]);  
-
+  }, [imageList, selectedIndex, filterMode]);
+  
   const fetchAndDownloadScreenshot = (filename) => {
     fetch(`/getScreenshot?filename=${encodeURIComponent(filename)}&clientSessionId=${encodeURIComponent(clientSessionId)}`)
       .then((response) => response.blob())
       .then((blob) => {
         const imageUrl = window.URL.createObjectURL(new Blob([blob]));
-        setImageSrc(imageUrl);
+        setImageSrc(imageUrl);  // Set loaded image source here
       })
       .catch((error) => {
         console.error('Error fetching the screenshot:', error);
+        setImageSrc("");  // Set to empty if there's an error
       });
   };
 
@@ -44,7 +47,7 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
     let newIndex = currentImageIndex;
     while (true) {
       newIndex += direction;
-      if (newIndex < 0 || newIndex >= imageList.length) break; // Out of bounds
+      if (newIndex < 0 || newIndex >= imageList.length) break;
       if (filterMode === 'hybrid' || imageList[newIndex].datatype === filterMode) {
         setCurrentImageIndex(newIndex);
         onObjectFocus(newIndex);
@@ -53,9 +56,20 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
     }
   };
 
-  // Radio button change handler
   const handleModeChange = (event) => {
     setFilterMode(event.target.value);
+  };
+
+  // Add the CSS transition here
+  const imageStyle = {
+    width: '50%',
+    height: 'auto',
+    resize: 'both',
+    overflow: 'auto',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    opacity: imageSrc ? 1 : 0,
+    transition: 'opacity 0.5s ease-in-out'
   };
 
   return (
@@ -65,14 +79,7 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
           <img
             src={imageSrc || imageList[currentImageIndex]}
             alt={`image-${currentImageIndex}`}
-            style={{
-              width: '50%',
-              height: 'auto',
-              resize: 'both',
-              overflow: 'auto',
-              maxWidth: '100%',
-              maxHeight: '100%'
-            }}
+            style={imageStyle}
           />
           <div>
             <button onClick={() => navigateImages(-1)} disabled={currentImageIndex === 0}>{"<"}</button>

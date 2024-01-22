@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 
-import SessionSelector from "../components/SessionSelector";
+import SessionSelector from "../components/ContentNavigator";
 import ObjectViewer from "../components/ObjectViewer";
 
 const FlowAnalysis = () => {
