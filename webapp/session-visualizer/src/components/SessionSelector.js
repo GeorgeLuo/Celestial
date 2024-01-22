@@ -27,6 +27,29 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
     }
   };
 
+  useEffect(() => {
+    // Handler to detect key press and navigate through the session
+    const handleKeyDown = (event) => {
+      if (event.key === "ArrowDown") {
+        setSelectedBoxIndex((prevIndex) => {
+          const nextIndex = prevIndex + 1 >= flowData.length ? prevIndex : prevIndex + 1;
+          onObjectFocus(nextIndex); // Move focus to the next session box
+          return nextIndex;
+        });
+      } else if (event.key === "ArrowUp") {
+        setSelectedBoxIndex((prevIndex) => {
+          const nextIndex = prevIndex - 1 < 0 ? prevIndex : prevIndex - 1;
+          onObjectFocus(nextIndex); // Move focus to the previous session box
+          return nextIndex;
+        });
+      }
+    };
+    // Add keydown event listener
+    document.addEventListener("keydown", handleKeyDown);
+    // Remove event listener on cleanup
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [flowData, onObjectFocus]);
+
   const handleBoxClick = (index) => {
     setSelectedBoxIndex(index);
     onObjectFocus(index); // Changed from passing boxData to passing index

@@ -18,8 +18,8 @@ const FlowAnalysis = () => {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "row" }}>
-      <div style={{ width: "33.33%", textAlign: "center" }}>
+    <div style={{ display: "flex", flexDirection: "row", height: "100vh" }}>
+      <div style={{ width: "33.33%", textAlign: "center", overflowY: "auto" }}>
         <SessionSelector onUpload={startSession} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} />
       </div>
       <div style={{ width: "66.67%", textAlign: "center" }}>
