@@ -13,12 +13,20 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
 
   useEffect(() => {
     const selectedObject = imageList[selectedIndex];
-    if (filterMode === 'screenshot' && selectedObject && selectedObject.datatype === 'screenshot') {
-      fetchAndDownloadScreenshot(selectedObject.filename);
-    } else if (filterMode === 'hybrid') {
-      fetchAndDownloadScreenshot(selectedObject.filename);
+    if (selectedObject) {
+      if (selectedObject.datatype === 'screenshot' || filterMode === 'hybrid') {
+        fetchAndDownloadScreenshot(selectedObject.filename);
+      } else if (selectedObject.datatype === 'event') {
+        // Find the most recent screenshot before the event
+        for (let i = selectedIndex - 1; i >= 0; i--) {
+          if (imageList[i].datatype === 'screenshot') {
+            fetchAndDownloadScreenshot(imageList[i].filename);
+            break;
+          }
+        }
+      }
     }
-  }, [imageList, selectedIndex, filterMode]);
+  }, [imageList, selectedIndex, filterMode]);  
 
   const fetchAndDownloadScreenshot = (filename) => {
     fetch(`/getScreenshot?filename=${encodeURIComponent(filename)}&clientSessionId=${encodeURIComponent(clientSessionId)}`)
