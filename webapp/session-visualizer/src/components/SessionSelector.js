@@ -1,14 +1,38 @@
-import React, { useState, useEffect } from "react";
-const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
+import React, { useState, useEffect, useRef } from "react";
 
+const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
   const [flowData, setFlowData] = useState(null);
   const [selectedBoxIndex, setSelectedBoxIndex] = useState(selectedIndex || 0);
+  const eventRefs = useRef([]);
 
   useEffect(() => {
     setSelectedBoxIndex(selectedIndex);
   }, [selectedIndex]);
+  useEffect(() => {
+    if (eventRefs.current[selectedBoxIndex]) {
+      eventRefs.current[selectedBoxIndex].scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
+  }, [selectedBoxIndex]);
+
   const handleFileChange = (event) => {
     const file = event.target.files[0];
+    processFile(file);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    processFile(file);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const processFile = (file) => {
     if (file) {
       const formData = new FormData();
       formData.append("file", file);
@@ -19,7 +43,7 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
         .then((response) => response.json())
         .then((data) => {
           setFlowData(data.timeline);
-          onUpload(data.timeline, data.client_session_id); // Triggered after successful upload
+          onUpload(data.timeline, data.client_session_id);
         })
         .catch((error) => {
           console.error("Error uploading the file:", error);
@@ -28,44 +52,55 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
   };
 
   useEffect(() => {
-    // Handler to detect key press and navigate through the session
     const handleKeyDown = (event) => {
       if (event.key === "ArrowDown") {
         setSelectedBoxIndex((prevIndex) => {
           const nextIndex = prevIndex + 1 >= flowData.length ? prevIndex : prevIndex + 1;
-          onObjectFocus(nextIndex); // Move focus to the next session box
+          onObjectFocus(nextIndex);
           return nextIndex;
         });
       } else if (event.key === "ArrowUp") {
         setSelectedBoxIndex((prevIndex) => {
           const nextIndex = prevIndex - 1 < 0 ? prevIndex : prevIndex - 1;
-          onObjectFocus(nextIndex); // Move focus to the previous session box
+          onObjectFocus(nextIndex);
           return nextIndex;
         });
       }
     };
-    // Add keydown event listener
     document.addEventListener("keydown", handleKeyDown);
-    // Remove event listener on cleanup
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [flowData, onObjectFocus]);
 
   const handleBoxClick = (index) => {
     setSelectedBoxIndex(index);
-    onObjectFocus(index); // Changed from passing boxData to passing index
+    onObjectFocus(index);
   };
-
- // Ensure highlighted textbox stays in sync with the selectedIndex
-  // const isSelected = (index) => index === selectedIndex;
 
   return (
     <div style={{ textAlign: "center" }}>
-      <input type="file" onChange={handleFileChange} />
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        style={{
+          border: "2px dashed #ccc",
+          padding: "20px",
+          margin: "20px",
+          cursor: "pointer"
+        }}
+      >
+        Drag and drop a session file here or click to upload
+        <input
+          type="file"
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
+      </div>
       <div>
         {flowData &&
           flowData.map((data, index) => (
             <pre
               key={index}
+              ref={el => eventRefs.current[index] = el}
               onClick={() => handleBoxClick(index)}
               style={{
                 padding: "10px",
@@ -84,4 +119,5 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
     </div>
   );
 };
+
 export default SessionSelector;

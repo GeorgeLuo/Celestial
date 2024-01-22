@@ -66,7 +66,7 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
             src={imageSrc || imageList[currentImageIndex]}
             alt={`image-${currentImageIndex}`}
             style={{
-              width: '66%',
+              width: '50%',
               height: 'auto',
               resize: 'both',
               overflow: 'auto',
