@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, redirect, flash, jsonify
+from flask import Flask, send_from_directory, request, redirect, flash, jsonify, send_file
 import os
 
 import sys
@@ -21,10 +21,27 @@ def allowed_file(filename):
   return '.' in filename and \
          filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+@app.route('/fetchCaptureSession', methods=['GET'])
+def fetch_capture_session():
+    capture_session_id = request.args.get('captureSessionId', '')
+    if capture_session_id == 'SearchDemo':
+        zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'demos/SearchDemo/SearchDemo.zip')
+
+        # Use extract_capture_session to process the .zip file
+        combined_data_sorted = extract_capture_session(zip_file_path)
+
+        # Return the combined sorted data instead of just flow_data
+        return jsonify({'timeline': combined_data_sorted, 'client_session_id': 'searchDemo'})
+    else:
+        return f'No demo available for id: {capture_session_id}', 404
+
+
 @app.route('/getScreenshot', methods=['GET'])
 def get_screenshot():
   filename = request.args.get('filename')
   clientSessionId = request.args.get('clientSessionId')
+  if(clientSessionId == 'searchDemo'):
+    return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], 'demos/SearchDemo', 'screenshots', filename))
   return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], str(clientSessionId), 'screenshots', filename))
 
 
