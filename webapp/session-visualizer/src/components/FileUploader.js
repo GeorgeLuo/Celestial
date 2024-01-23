@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
 
 const FileUploader = ({ onFileSelect, onCaptureSessionSelection }) => {
-    const [captureSessionId, setCaptureSessionId] = useState('SearchDemo');
-    const fileInputRef = useRef(null); // Step 1: Create a ref for the file input
+    const [captureSessionId, setCaptureSessionId] = useState('EmailDemo');
+    const fileInputRef = useRef(null);
 
     const handleFileInputChange = (event) => {
-        const files = event.target.files; // This will be a FileList of all selected files
+        const files = event.target.files;
         Array.from(files).forEach(file => onFileSelect(file));
     };
 
@@ -19,7 +19,7 @@ const FileUploader = ({ onFileSelect, onCaptureSessionSelection }) => {
 
     const handleDrop = (event) => {
         event.preventDefault();
-        const files = event.dataTransfer.files; // This may contain one or more dropped files
+        const files = event.dataTransfer.files;
         Array.from(files).forEach(file => onFileSelect(file));
     };
 
@@ -27,7 +27,6 @@ const FileUploader = ({ onFileSelect, onCaptureSessionSelection }) => {
         event.preventDefault();
     };
 
-    // Step 2: Trigger a click event on the hidden file input when the drag and drop area is clicked
     const handleUploaderClick = () => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
@@ -39,7 +38,7 @@ const FileUploader = ({ onFileSelect, onCaptureSessionSelection }) => {
             <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                onClick={handleUploaderClick} // Step 3: Make the drag and drop area clickable
+                onClick={handleUploaderClick}
                 style={{
                     border: "2px dashed #ccc",
                     padding: "20px",
@@ -54,7 +53,7 @@ const FileUploader = ({ onFileSelect, onCaptureSessionSelection }) => {
                 type="file"
                 multiple
                 onChange={handleFileInputChange}
-                style={{ display: "none" }} // Step 4: Hide the file input element
+                style={{ display: "none" }}
             />
             <div>
                 <input

@@ -11,11 +11,10 @@ from session_context import store_session
 app = Flask(__name__, static_folder='session-visualizer/build')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'zip'}
-app.secret_key = 'super_secret_key'  # Change this to a random secret key
+app.secret_key = 'super_secret_key'
 
 # Ensure the upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 
 def allowed_file(filename):
   return '.' in filename and \
@@ -24,14 +23,14 @@ def allowed_file(filename):
 @app.route('/fetchCaptureSession', methods=['GET'])
 def fetch_capture_session():
     capture_session_id = request.args.get('captureSessionId', '')
-    if capture_session_id == 'SearchDemo':
-        zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'demos/SearchDemo/SearchDemo.zip')
+    if capture_session_id == 'EmailDemo':
+        zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'demos/EmailDemo/EmailDemo.zip')
 
         # Use extract_capture_session to process the .zip file
         combined_data_sorted = extract_capture_session(zip_file_path)
 
         # Return the combined sorted data instead of just flow_data
-        return jsonify({'timeline': combined_data_sorted, 'client_session_id': 'searchDemo'})
+        return jsonify({'timeline': combined_data_sorted, 'client_session_id': 'EmailDemo'})
     else:
         return f'No demo available for id: {capture_session_id}', 404
 
@@ -40,8 +39,8 @@ def fetch_capture_session():
 def get_screenshot():
   filename = request.args.get('filename')
   clientSessionId = request.args.get('clientSessionId')
-  if(clientSessionId == 'searchDemo'):
-    return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], 'demos/SearchDemo', 'screenshots', filename))
+  if(clientSessionId == 'EmailDemo'):
+    return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], 'demos/EmailDemo', 'screenshots', filename))
   return send_from_directory(os.getcwd(), os.path.join(app.config['UPLOAD_FOLDER'], str(clientSessionId), 'screenshots', filename))
 
 
@@ -58,13 +57,11 @@ def upload_file():
 
     client_session_id, zip_path = store_session(app.config['UPLOAD_FOLDER'], file)
 
-    # Use extract_capture_session to process the .zip file
     combined_data_sorted = extract_capture_session(zip_path)
 
     # TODO: figure out how to store these files
     os.remove(zip_path)
 
-    # Return the combined sorted data instead of just flow_data
     return jsonify({'timeline': combined_data_sorted, 'client_session_id': str(client_session_id)})
   else:
     flash('Invalid file type')

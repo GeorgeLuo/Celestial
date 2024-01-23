@@ -38,7 +38,6 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
       })
       .catch(error => {
         console.error('Error fetching the demo:', error);
-        // Handle error conditions, such as showing an error message to the user
       });
   };
 

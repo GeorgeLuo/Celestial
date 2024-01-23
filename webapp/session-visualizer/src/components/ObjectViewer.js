@@ -33,7 +33,6 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
       } else if (filterMode === 'hybrid') {
         break;
       }
-      // If none of the conditions match, continue looping to the next index
     }
 
     setCurrentImageIndex(newIndex);
@@ -68,11 +67,9 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
           recentScreenshotIndex -= 1;
         }
         if (recentScreenshotIndex >= 0) {
-          // Fetch the most recent screenshot
           const recentScreenshot = imageList[recentScreenshotIndex];
           fetchAndDownloadScreenshot(recentScreenshot.filename);
         } else {
-          // No screenshot available, clear the source
           setImageSrc("");
         }
       }
