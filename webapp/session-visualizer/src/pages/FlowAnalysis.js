@@ -8,9 +8,11 @@ const FlowAnalysis = () => {
   const [imageList, setImageList] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // Use the useCallback hook to memoize the startSession callback
   const startSession = useCallback((newImageList, clientSessionId) => {
     setClientSessionId(clientSessionId);
     setImageList(newImageList);
+    setSelectedIndex(0); // Reset selectedIndex to 0 when new session starts
   }, []);
 
   const handleObjectFocus = useCallback((index) => {

@@ -61,6 +61,20 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
       setCurrentImageIndex(selectedIndex);
       if (selectedObject.datatype === 'screenshot') {
         fetchAndDownloadScreenshot(selectedObject.filename);
+      } else {
+        // If the selected object is not a screenshot, find the most recent one
+        let recentScreenshotIndex = selectedIndex;
+        while (recentScreenshotIndex >= 0 && imageList[recentScreenshotIndex].datatype !== 'screenshot') {
+          recentScreenshotIndex -= 1;
+        }
+        if (recentScreenshotIndex >= 0) {
+          // Fetch the most recent screenshot
+          const recentScreenshot = imageList[recentScreenshotIndex];
+          fetchAndDownloadScreenshot(recentScreenshot.filename);
+        } else {
+          // No screenshot available, clear the source
+          setImageSrc("");
+        }
       }
     }
   }, [imageList, selectedIndex, fetchAndDownloadScreenshot]);
