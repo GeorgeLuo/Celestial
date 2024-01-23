@@ -11,6 +11,15 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
   }, [imageList]);
 
   useEffect(() => {
+    if (selectedIndex !== currentImageIndex) {
+      setCurrentImageIndex(selectedIndex); // Sync currentIndex with selectedIndex
+      if (imageList[selectedIndex].datatype === 'screenshot' || filterMode === 'hybrid') {
+        fetchAndDownloadScreenshot(imageList[selectedIndex].filename);
+      }
+    }
+  }, [selectedIndex, imageList, filterMode]);
+
+  useEffect(() => {
     const selectedObject = imageList[selectedIndex];
     if (selectedObject) {
       if (selectedObject.datatype === 'screenshot' || filterMode === 'hybrid') {
