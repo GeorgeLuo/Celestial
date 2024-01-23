@@ -1,75 +1,90 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex);
   const [imageSrc, setImageSrc] = useState("");
   const [filterMode, setFilterMode] = useState('screenshot');
 
-  useEffect(() => {
-    const firstScreenshotIndex = imageList.findIndex(object => object.datatype === 'screenshot');
-    if (firstScreenshotIndex !== -1) setCurrentImageIndex(firstScreenshotIndex);
-  }, [imageList]);
-
-  useEffect(() => {
-    if (selectedIndex !== currentImageIndex) {
-      setCurrentImageIndex(selectedIndex); // Sync currentIndex with selectedIndex
-      if (imageList[selectedIndex].datatype === 'screenshot' || filterMode === 'hybrid') {
-        fetchAndDownloadScreenshot(imageList[selectedIndex].filename);
-      }
-    }
-  }, [selectedIndex, imageList, filterMode]);
-
-  useEffect(() => {
-    const selectedObject = imageList[selectedIndex];
-    if (selectedObject) {
-      if (selectedObject.datatype === 'screenshot' || filterMode === 'hybrid') {
-        fetchAndDownloadScreenshot(selectedObject.filename);
-      } else if (selectedObject.datatype === 'event') {
-        let screenshotFound = false;
-        // Find the most recent screenshot before the event
-        for (let i = selectedIndex - 1; i >= 0; i--) {
-          if (imageList[i].datatype === 'screenshot') {
-            fetchAndDownloadScreenshot(imageList[i].filename);
-            screenshotFound = true;
-            break;
-          }
-        }
-        // If no screenshot is found before the event, keep the image source as it was
-      }
-    }
-  }, [imageList, selectedIndex, filterMode]);
-  
-  const fetchAndDownloadScreenshot = (filename) => {
+  const fetchAndDownloadScreenshot = useCallback((filename) => {
     fetch(`/getScreenshot?filename=${encodeURIComponent(filename)}&clientSessionId=${encodeURIComponent(clientSessionId)}`)
       .then((response) => response.blob())
       .then((blob) => {
         const imageUrl = window.URL.createObjectURL(new Blob([blob]));
-        setImageSrc(imageUrl);  // Set loaded image source here
+        setImageSrc(imageUrl);
       })
       .catch((error) => {
         console.error('Error fetching the screenshot:', error);
-        setImageSrc("");  // Set to empty if there's an error
+        setImageSrc("");
       });
-  };
+  }, [clientSessionId]);
 
-  const navigateImages = (direction) => {
+  const navigateImages = useCallback((direction) => {
     let newIndex = currentImageIndex;
+
     while (true) {
       newIndex += direction;
-      if (newIndex < 0 || newIndex >= imageList.length) break;
-      if (filterMode === 'hybrid' || imageList[newIndex].datatype === filterMode) {
-        setCurrentImageIndex(newIndex);
-        onObjectFocus(newIndex);
+      if (newIndex < 0 || newIndex >= imageList.length) return;
+
+      const newImageDataType = imageList[newIndex]?.datatype;
+      if (filterMode === 'event' && newImageDataType === 'event') {
+        break;
+      } else if (filterMode === 'screenshot' && newImageDataType === 'screenshot') {
+        break;
+      } else if (filterMode === 'hybrid') {
         break;
       }
+      // If none of the conditions match, continue looping to the next index
     }
-  };
+
+    setCurrentImageIndex(newIndex);
+    const newImage = imageList[newIndex];
+    if (newImage?.datatype === 'screenshot') {
+      const filename = newImage?.filename;
+      if (filename) {
+        fetchAndDownloadScreenshot(filename);
+      }
+    }
+    onObjectFocus(newIndex);
+  }, [currentImageIndex, imageList, filterMode, onObjectFocus, fetchAndDownloadScreenshot]);
+
+  useEffect(() => {
+    if (imageList[currentImageIndex]) {
+      if (imageList[currentImageIndex].datatype === 'screenshot') {
+        fetchAndDownloadScreenshot(imageList[currentImageIndex].filename);
+      }
+    }
+  }, [currentImageIndex, imageList, fetchAndDownloadScreenshot]);
+
+  useEffect(() => {
+    const selectedObject = imageList[selectedIndex];
+    if (selectedObject) {
+      setCurrentImageIndex(selectedIndex);
+      if (selectedObject.datatype === 'screenshot') {
+        fetchAndDownloadScreenshot(selectedObject.filename);
+      }
+    }
+  }, [imageList, selectedIndex, fetchAndDownloadScreenshot]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.keyCode === 37) {
+        navigateImages(-1);
+      } else if (event.keyCode === 39) {
+        navigateImages(1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [navigateImages]);
 
   const handleModeChange = (event) => {
     setFilterMode(event.target.value);
   };
 
-  // Add the CSS transition here
   const imageStyle = {
     width: '50%',
     height: 'auto',
@@ -86,7 +101,7 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
       {imageList[currentImageIndex] && (
         <>
           <img
-            src={imageSrc || imageList[currentImageIndex]}
+            src={imageSrc || imageList[currentImageIndex].src}
             alt={`image-${currentImageIndex}`}
             style={imageStyle}
           />

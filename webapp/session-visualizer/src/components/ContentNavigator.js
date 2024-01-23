@@ -35,7 +35,7 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
       .then(data => {
         setFlowData(data.timeline);
         onUpload(data.timeline, data.client_session_id);
-    })
+      })
       .catch(error => {
         console.error('Error fetching the demo:', error);
         // Handle error conditions, such as showing an error message to the user
@@ -69,7 +69,7 @@ const SessionSelector = ({ onUpload, onObjectFocus, selectedIndex }) => {
 
   return (
     <div style={{ position: "sticky", top: 0, textAlign: "center" }}>
-      <FileUploader onFileUpload={processFile} onCaptureSessionSelection={fetchCaptureSession} />
+      <FileUploader onFileSelect={processFile} onCaptureSessionSelection={fetchCaptureSession} />
       <div style={{ overflowY: "auto", height: "calc(100vh - 100px)" }}> {/* Adjust the height according to your needs */}
         {flowData && (
           <ObjectList
