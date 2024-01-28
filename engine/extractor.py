@@ -144,12 +144,11 @@ def generate_unique_filename(metadata, unique_image_seed=[0]):
     return filename
 
 
-def parse_image_boundaries(assets_output_path,
-                           granularity,
-                           image,
+def parse_image_boundaries(image,
+                           granularity=20,
                            unique_image_seed=[0],
                            std_dev_threshold=3,
-                           buffer_pixels=3):
+                           buffer_pixels=3, assets_output_path=None):
   element_boundaries = find_atomic_element_boundaries(image, granularity)
 
   visible_elements = []
@@ -174,9 +173,10 @@ def parse_image_boundaries(assets_output_path,
     filename = generate_unique_filename(metadata, unique_image_seed)
 
     boundary['image'] = os.path.join(assets_output_path, filename)
-    write_image_to_file(subimage,
-                        assets_output_path=assets_output_path,
-                        filename=filename)
+    if assets_output_path is not None:
+      write_image_to_file(subimage,
+                          assets_output_path=assets_output_path,
+                          filename=filename)
     visible_elements.append(boundary)
 
   return visible_elements
@@ -287,8 +287,7 @@ class Extractor:
     if screenshot_file is None:
       screenshot_file = self.screenshot_and_rescale()
 
-    return parse_image_boundaries(assets_output_path, granularity,
-                                  screenshot_file)
+    return parse_image_boundaries(screenshot_file, granularity=granularity, assets_output_path=assets_output_path)
 
   def close_driver(self):
     self.driver.quit()
