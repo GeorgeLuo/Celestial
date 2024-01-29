@@ -81,62 +81,6 @@ function determineScrollPosition(values) {
     }
 }
 
-function exportModifiedFlow(includeImages = true) {
-    if (flowData) {
-        if (includeImages) {
-            let cleanFlowData = JSON.parse(JSON.stringify(flowData));
-
-            var zip = new JSZip();
-            zip.file("flow.json", JSON.stringify(cleanFlowData, null, 2));
-            var imgFolder = zip.folder("screenshots");
-
-            cleanFlowData.screenshots.forEach(screenshot => {
-                if (typeof screenshot.dataUrl === 'undefined') {
-                    console.log('no screenshot');
-                    return;
-                }
-                var base64Data = screenshot.dataUrl.split(';base64,').pop();
-                var imgData = atob(base64Data);
-                var imgArray = new Uint8Array(imgData.length);
-                for (var i = 0; i < imgData.length; i++) {
-                    imgArray[i] = imgData.charCodeAt(i);
-                }
-                const date = new Date(screenshot.time);
-
-                var fileName = `${Math.floor(date.getTime() / 1000)}_${screenshot.screenshotId}.png`;
-                screenshot.dataUrl = undefined;
-                screenshot.filename = fileName;
-
-                imgFolder.file(fileName, imgArray, { base64: true });
-            });
-
-            zip.file("flow.json", JSON.stringify(cleanFlowData, null, 2));
-
-            zip.generateAsync({ type: "blob" }).then(function (content) {
-                saveAs(content, "exportedFlow.zip");
-            });
-        } else {
-            var cleanFlowData = {
-                ...flowData,
-                screenshots: flowData.screenshots.map(s => ({ ...s, dataUrl: undefined }))
-            };
-            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanFlowData));
-            var downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "exportedFlow.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        }
-    } else {
-        console.error('Flow data is not available for export.');
-    }
-}
-
-document.getElementById('exportModifiedFlow').addEventListener('click', function () {
-    exportModifiedFlow(true);
-});
-
 function downloadObjectAsJson(exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
     var downloadAnchorNode = document.createElement('a');
@@ -148,7 +92,7 @@ function downloadObjectAsJson(exportObj, exportName) {
 }
 
 document.getElementById('exportModifiedFlowsWithoutImages').addEventListener('click', function () {
-    exportModifiedFlow(includeImages = false);
+    exportModifiedFlow(flowData, includeImages = false);
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -160,7 +104,10 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.error('Flow data is not available.');
     }
-    document.getElementById('exportModifiedFlow').addEventListener('click', exportModifiedFlow);
+
+    document.getElementById('exportModifiedFlow').addEventListener('click', function () {
+        exportModifiedFlow(flowData, true);
+    });
 
     var namedLabelInput = document.getElementById('namedFlowLabel');
     if (flowData && flowData.label) {

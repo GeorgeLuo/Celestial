@@ -9,18 +9,22 @@ let typingState = { isTyping: false, typingCount: 0 };
 
 chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.location.href, time: new Date().toISOString() });
 
-// Ask the background page if it's currently capturing
-chrome.runtime.sendMessage({ action: 'checkState' }, function (response) {
-  capturing = response.isCapturing;
-  replaying = response.isReplaying;
-  if (capturing) {
-    console.log('Content script reinitialized and capturing is active.');
-    enableCaptureListeners();
-  }
-  if (replaying) {
-    console.log('Content script reinitialized and replaying is active.');
-  }
-});
+checkState();
+
+function checkState() {
+  // Ask the background page if it's currently capturing
+  chrome.runtime.sendMessage({ action: 'checkState' }, function (response) {
+    capturing = response.isCapturing;
+    replaying = response.isReplaying;
+    if (capturing) {
+      console.log('Content script reinitialized and capturing is active.');
+      enableCaptureListeners();
+    }
+    if (replaying) {
+      console.log('Content script reinitialized and replaying is active.');
+    }
+  });
+}
 
 function handleDocumentClick(event) {
   if (capturing) {
@@ -138,6 +142,12 @@ window.addEventListener('beforeunload', function (event) {
   }
 }, false);
 
+function checkTabStabilityAndNotifyBackground() {  
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ action: "tabIsStable" });
+  }, 333);
+}
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "startCapture") {
     capturing = true;
@@ -148,6 +158,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     sendResponse({ status: 'capture stopped' });
   } else if (request.action === "playEvent") {
     playEvent(request.event);
+  } else if (request.action == "tabActivated") {
+    checkState();
+    checkTabStabilityAndNotifyBackground();
   }
 });
 

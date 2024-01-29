@@ -27,7 +27,7 @@ function resetTypingState() {
   fullKeyInputSequence = [];
   typeCount = 0;
   nextTypingScreenshotCount = 6;
-  
+
   heldKeys = {};
 }
 
@@ -187,7 +187,8 @@ const CaptureStage = {
   CLICK: 'CLICK',
   BEFORE_UNLOAD: 'BEFORE_UNLOAD',
   AFTER_LOAD: 'AFTER_LOAD',
-  END_OF_CAPTURE: 'END_OF_CAPTURE'
+  END_OF_CAPTURE: 'END_OF_CAPTURE',
+  TAB_SWITCH: 'TAB_SWITCH'
 };
 
 /**
@@ -236,6 +237,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Save the start time and tab dimensions
       captureSession.startTime = new Date().toISOString();
       chrome.tabs.get(request.tabId, function (tab) {
+        activeTabId = tab.id
         captureSession.tabDimensions = {
           width: tab.width,
           height: tab.height
@@ -371,6 +373,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "checkState":
       sendResponse({ isCapturing: isCapturing, isReplaying: isReplaying });
       break;
+    case "tabIsStable":
+      if (isCapturing) {
+        resetTypingState();
+        addEventToCaptureSession({
+          type: 'tabSwitch',
+          time: new Date().toISOString(),
+          trigger: 'user',
+          activeTabId: activeTabId
+        });
+        takeScreenshot(function (dataUrl, screenshotTime) {
+          storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.TAB_SWITCH);
+        });
+      }
+      break;
   }
   return true;
+});
+
+let activeTabId = null;
+
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+  if (activeTabId !== activeInfo.tabId) {
+    // if (isCapturing) {
+    //   addEventToCaptureSession({
+    //     type: 'tabSwitch',
+    //     fromTabId: activeTabId,
+    //     toTabId: activeInfo.tabId,
+    //     time: new Date().toISOString(),
+    //     trigger: 'user'
+    //   });
+    //   takeAndSaveScreenshot('tabSwitch', {
+    //     fromTabId: activeTabId,
+    //     toTabId: activeInfo.tabId
+    //   });
+    // }
+    activeTabId = activeInfo.tabId;
+  }
+
+  // Send a message to content.js of the activated tab
+  chrome.tabs.sendMessage(activeInfo.tabId, {
+    action: "tabActivated",
+  });
 });
