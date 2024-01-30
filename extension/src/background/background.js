@@ -10,11 +10,11 @@ let isCapturing = false;
 
 let fullKeyInputSequence = []
 let typeCount = 0;
-let nextTypingScreenshotCount = 6;
+let nextTypingScreenshotCount = 1;
 let heldKeys = {};
 
 function setNextTypingScreenshotCount() {
-  nextTypingScreenshotCount *= 2;
+  nextTypingScreenshotCount *= 3;
   console.log(nextTypingScreenshotCount);
 }
 
@@ -74,7 +74,8 @@ const EventCaptureType = {
   SCROLL: 'scroll',
   COPY: 'copy',
   CUT: 'cut',
-  TAB_SWITCH: 'tabSwitch'
+  TAB_SWITCH: 'tabSwitch',
+  AFTER_LOAD: 'urlChange'
 };
 
 function addEventToCaptureSession(event) {
@@ -89,6 +90,7 @@ function addEventToCaptureSession(event) {
       values = { data: event.value, fullKeyInputSequence: [...fullKeyInputSequence] };
       if (typeCount === nextTypingScreenshotCount) {
         setNextTypingScreenshotCount();
+      } else {
         attemptScreenshot = false;
       }
       break;
@@ -113,6 +115,9 @@ function addEventToCaptureSession(event) {
       break;
     case EventCaptureType.TAB_SWITCH:
       attemptScreenshot = false;
+      break;
+    case EventCaptureType.AFTER_LOAD:
+      attemptScreenshot = true;
       break;
   }
   if (attemptScreenshot) takeAndSaveScreenshot(event.type, values = values);
@@ -361,9 +366,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             trigger: "page"
           });
           knownUrl = request.currentUrl;
-          takeScreenshot(function (dataUrl, screenshotTime) {
-            storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.AFTER_LOAD);
-          });
         }
       }
       break;
