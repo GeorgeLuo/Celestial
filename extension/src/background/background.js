@@ -14,7 +14,7 @@ let nextTypingScreenshotCount = 1;
 let heldKeys = {};
 
 function setNextTypingScreenshotCount() {
-  nextTypingScreenshotCount *= 3;
+  nextTypingScreenshotCount *= 2;
   console.log(nextTypingScreenshotCount);
 }
 
