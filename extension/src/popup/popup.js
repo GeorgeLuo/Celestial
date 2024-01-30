@@ -42,6 +42,19 @@ document.getElementById('replayFlow').addEventListener('click', function () {
   });
 });
 
+document.getElementById('exportFlow').addEventListener('click', function () {
+  var selectedFlowIndex = document.getElementById('flowsSelect').value;
+  chrome.storage.local.get(['captureSessions'], function (result) {
+    var capturedFlows = result.captureSessions || [];
+    var selectedFlow = capturedFlows[selectedFlowIndex];
+    if (selectedFlow) {
+      exportModifiedFlow(selectedFlow, true);
+    } else {
+      console.error('Selected flow index is not valid.');
+    }
+  });
+});
+
 document.getElementById('exportFlows').addEventListener('click', function () {
   chrome.storage.local.get(['captureSessions'], function (result) {
     var capturedFlows = result.captureSessions || [];
