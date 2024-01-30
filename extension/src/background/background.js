@@ -74,6 +74,7 @@ const EventCaptureType = {
   SCROLL: 'scroll',
   COPY: 'copy',
   CUT: 'cut',
+  TAB_SWITCH: 'tabSwitch'
 };
 
 function addEventToCaptureSession(event) {
@@ -109,6 +110,9 @@ function addEventToCaptureSession(event) {
       values = {
         value: event.value
       };
+      break;
+    case EventCaptureType.TAB_SWITCH:
+      attemptScreenshot = false;
       break;
   }
   if (attemptScreenshot) takeAndSaveScreenshot(event.type, values = values);
@@ -314,6 +318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             addEventToCaptureSession({
               type: EventCaptureType.PASTE,
               value: request.value,
+              time: request.time,
               trigger: "user"
             });
             break;
@@ -322,6 +327,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               type: EventCaptureType.SCROLL,
               scrollX: request.scrollX,
               scrollY: request.scrollY,
+              time: request.time,
               trigger: "user"
             });
             break;
@@ -376,12 +382,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "tabIsStable":
       if (isCapturing) {
         resetTypingState();
-        addEventToCaptureSession({
-          type: 'tabSwitch',
-          time: new Date().toISOString(),
-          trigger: 'user',
-          activeTabId: activeTabId
-        });
         takeScreenshot(function (dataUrl, screenshotTime) {
           storeScreenshot(dataUrl, screenshotTime, label = CaptureStage.TAB_SWITCH);
         });
@@ -394,25 +394,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 let activeTabId = null;
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
-  if (activeTabId !== activeInfo.tabId) {
-    // if (isCapturing) {
-    //   addEventToCaptureSession({
-    //     type: 'tabSwitch',
-    //     fromTabId: activeTabId,
-    //     toTabId: activeInfo.tabId,
-    //     time: new Date().toISOString(),
-    //     trigger: 'user'
-    //   });
-    //   takeAndSaveScreenshot('tabSwitch', {
-    //     fromTabId: activeTabId,
-    //     toTabId: activeInfo.tabId
-    //   });
-    // }
-    activeTabId = activeInfo.tabId;
-  }
+  if (isCapturing) {
+    if (activeTabId !== activeInfo.tabId) {
+      activeTabId = activeInfo.tabId;
+      addEventToCaptureSession({
+        type: 'tabSwitch',
+        time: new Date().toISOString(),
+        trigger: 'user',
+        activeTabId: activeTabId
+      });
+    }
 
-  // Send a message to content.js of the activated tab
-  chrome.tabs.sendMessage(activeInfo.tabId, {
-    action: "tabActivated",
-  });
+    chrome.tabs.sendMessage(activeInfo.tabId, {
+      action: "tabActivated",
+    });
+  }
 });

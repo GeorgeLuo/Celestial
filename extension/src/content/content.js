@@ -160,7 +160,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     playEvent(request.event);
   } else if (request.action == "tabActivated") {
     checkState();
-    checkTabStabilityAndNotifyBackground();
+    if (capturing) {
+      checkTabStabilityAndNotifyBackground();
+    }
   }
 });
 
