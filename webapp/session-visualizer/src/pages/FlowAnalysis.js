@@ -3,8 +3,10 @@ import React, { useState, useCallback } from "react";
 import SessionSelector from "../components/ContentNavigator";
 import ObjectViewer from "../components/ObjectViewer";
 
-const FlowAnalysis = () => {
-  const [clientSessionId, setClientSessionId] = useState("");
+const FlowAnalysis = ({ initialClientSessionId }) => {
+  const [clientSessionId, setClientSessionId] = useState(
+    initialClientSessionId,
+  );
   const [imageList, setImageList] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -21,14 +23,30 @@ const FlowAnalysis = () => {
   return (
     <div style={{ display: "flex", flexDirection: "row", height: "100vh" }}>
       <div style={{ width: "33.33%", textAlign: "center", overflowY: "auto" }}>
-        <SessionSelector onUpload={startSession} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} />
+        <SessionSelector
+          clientSessionId={clientSessionId} // Pass clientSessionId as a prop to SessionSelector
+          onUpload={startSession}
+          onObjectFocus={handleObjectFocus}
+          selectedIndex={selectedIndex}
+        />
       </div>
       <div style={{ width: "66.67%", textAlign: "center" }}>
-        <ObjectViewer imageList={imageList} onObjectFocus={handleObjectFocus} selectedIndex={selectedIndex} clientSessionId={clientSessionId}/>
+        <ObjectViewer
+          imageList={imageList}
+          onObjectFocus={handleObjectFocus}
+          selectedIndex={selectedIndex}
+          clientSessionId={clientSessionId}
+        />
         {imageList[selectedIndex] && (
           <div>
             <h3>Focused Object:</h3>
-            <pre style={{ textAlign: "left", display: "inline-block", textJustify: "auto" }}>
+            <pre
+              style={{
+                textAlign: "left",
+                display: "inline-block",
+                textJustify: "auto",
+              }}
+            >
               {JSON.stringify(imageList[selectedIndex], null, 2)}
             </pre>
           </div>

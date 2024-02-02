@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, redirect, flash, jsonify
+from flask import Flask, render_template, send_from_directory, request, redirect, flash, jsonify
 import os
 
 import sys
@@ -84,7 +84,7 @@ def upload_file():
     # TODO: figure out how to store these files
     os.remove(zip_path)
 
-    mimodex_url = 'http://localhost:4999/fetchCaptureSession?captureSessionId=' + client_session_id
+    mimodex_url = 'http://localhost:4999/?captureSessionId=' + client_session_id
 
     return jsonify({
         'url': mimodex_url,
