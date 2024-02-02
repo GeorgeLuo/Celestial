@@ -1,94 +1,140 @@
-
 // button handlers
 
-document.getElementById('startCapture').addEventListener('click', function () {
+document.getElementById("startCapture").addEventListener("click", function () {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
     chrome.runtime.sendMessage({ action: "startCapture", tabId: activeTab.id });
   });
 });
 
-document.getElementById('stopCapture').addEventListener('click', function () {
-  let flowLabelField = document.getElementById('flowLabel');
+document.getElementById("stopCapture").addEventListener("click", function () {
+  let flowLabelField = document.getElementById("flowLabel");
   let labelValue = flowLabelField.value || flowLabelField.placeholder;
 
-  chrome.runtime.sendMessage({ action: "stopCapture", label: labelValue }, function (response) {
-    if (response && response.status === 'capture ended') {
-      console.log('Capture stopped successfully');
-      populateCapturedFlowsDropdown();
-    } else {
-      console.error('Failed to stop capture');
-    }
-  });
+  chrome.runtime.sendMessage(
+    { action: "stopCapture", label: labelValue },
+    function (response) {
+      if (response && response.status === "capture ended") {
+        console.log("Capture stopped successfully");
+        populateCapturedFlowsDropdown();
+      } else {
+        console.error("Failed to stop capture");
+      }
+    },
+  );
 });
 
-document.getElementById('replayFlow').addEventListener('click', function () {
-  var selectedFlowIndex = document.getElementById('flowsSelect').value;
-  chrome.storage.local.get(['captureSessions'], function (result) {
+document.getElementById("replayFlow").addEventListener("click", function () {
+  var selectedFlowIndex = document.getElementById("flowsSelect").value;
+  chrome.storage.local.get(["captureSessions"], function (result) {
     var capturedFlows = result.captureSessions || [];
     var selectedFlow = capturedFlows[selectedFlowIndex];
     if (selectedFlow) {
       console.log(selectedFlow);
-      chrome.runtime.sendMessage({ action: "replayFlow", flowData: selectedFlow }, function (response) {
-        if (response && response.replayStarted) {
-          window.close(); // Closes the popup
-        } else {
-          console.error('Error starting replay flow.');
-        }
-      });
+      chrome.runtime.sendMessage(
+        { action: "replayFlow", flowData: selectedFlow },
+        function (response) {
+          if (response && response.replayStarted) {
+            window.close(); // Closes the popup
+          } else {
+            console.error("Error starting replay flow.");
+          }
+        },
+      );
     } else {
-      console.error('Selected flow index is not valid.');
+      console.error("Selected flow index is not valid.");
     }
   });
 });
 
-document.getElementById('exportFlow').addEventListener('click', function () {
-  var selectedFlowIndex = document.getElementById('flowsSelect').value;
-  chrome.storage.local.get(['captureSessions'], function (result) {
+document.getElementById("exportFlow").addEventListener("click", function () {
+  var selectedFlowIndex = document.getElementById("flowsSelect").value;
+  chrome.storage.local.get(["captureSessions"], function (result) {
     var capturedFlows = result.captureSessions || [];
     var selectedFlow = capturedFlows[selectedFlowIndex];
     if (selectedFlow) {
       exportModifiedFlow(selectedFlow, true);
     } else {
-      console.error('Selected flow index is not valid.');
+      console.error("Selected flow index is not valid.");
     }
   });
 });
 
-document.getElementById('exportFlows').addEventListener('click', function () {
-  chrome.storage.local.get(['captureSessions'], function (result) {
+document
+  .getElementById("exportToMimodex")
+  .addEventListener("click", function () {
+    var selectedFlowIndex = document.getElementById("flowsSelect").value;
+    chrome.storage.local.get(["captureSessions"], function (result) {
+      var capturedFlows = result.captureSessions || [];
+      var selectedFlow = capturedFlows[selectedFlowIndex];
+      if (selectedFlow) {
+        exportModifiedFlow(selectedFlow, true, false).then(function (zipBlob) {
+          uploadZipAndRedirect(zipBlob);
+        }).catch(function (error) {
+          console.error("Error generating zip Blob:", error);
+        });
+      } else {
+        console.error("Selected flow index is not valid.");
+      }
+    });
+  });
+
+function uploadZipAndRedirect(zipFile) {
+  var formData = new FormData();
+  formData.append("file", zipFile, "flow.zip");
+  fetch("http://localhost:4999/upload", {
+    method: "POST",
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      if (data.url) {
+        console.log("opening new tab", data.url );
+        chrome.tabs.create({ url: data.url });
+      }
+    })
+    .catch((error) => console.error("Error uploading flow zip:", error));
+}
+
+document.getElementById("exportFlows").addEventListener("click", function () {
+  chrome.storage.local.get(["captureSessions"], function (result) {
     var capturedFlows = result.captureSessions || [];
     var dataToSave = { captureSessions: capturedFlows };
-    downloadObjectAsJson(dataToSave, 'capturedFlows');
+    downloadObjectAsJson(dataToSave, "capturedFlows");
   });
 });
 
-document.getElementById('analyzeFlow').addEventListener('click', function () {
-  var selectedFlowIndex = document.getElementById('flowsSelect').value;
-  chrome.storage.local.get(['captureSessions'], function (result) {
+document.getElementById("analyzeFlow").addEventListener("click", function () {
+  var selectedFlowIndex = document.getElementById("flowsSelect").value;
+  chrome.storage.local.get(["captureSessions"], function (result) {
     var capturedFlows = result.captureSessions || [];
     var selectedFlow = capturedFlows[selectedFlowIndex];
     if (selectedFlow) {
-      localStorage.setItem('selectedFlowData', JSON.stringify(selectedFlow));
-      var newWindow = window.open("analyzeFlow.html", "Flow Analysis Window", "width=600, height=400");
+      localStorage.setItem("selectedFlowData", JSON.stringify(selectedFlow));
+      var newWindow = window.open(
+        "analyzeFlow.html",
+        "Flow Analysis Window",
+        "width=600, height=400",
+      );
     } else {
-      console.error('Selected flow index is not valid.');
+      console.error("Selected flow index is not valid.");
     }
   });
 });
 
-document.getElementById('clearFlows').addEventListener('click', function () {
-  chrome.storage.local.remove(['captureSessions'], function () {
+document.getElementById("clearFlows").addEventListener("click", function () {
+  chrome.storage.local.remove(["captureSessions"], function () {
     populateCapturedFlowsDropdown();
   });
 });
 
 // on load listeners
 
-document.addEventListener('DOMContentLoaded', populateCapturedFlowsDropdown);
+document.addEventListener("DOMContentLoaded", populateCapturedFlowsDropdown);
 
-document.addEventListener('DOMContentLoaded', function () {
-  let labelField = document.getElementById('flowLabel');
+document.addEventListener("DOMContentLoaded", function () {
+  let labelField = document.getElementById("flowLabel");
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let currentTab = tabs[0];
     labelField.placeholder = currentTab.title;
@@ -98,34 +144,41 @@ document.addEventListener('DOMContentLoaded', function () {
 // utilities
 
 function populateCapturedFlowsDropdown() {
-  chrome.storage.local.get(['captureSessions'], function (result) {
+  chrome.storage.local.get(["captureSessions"], function (result) {
     var capturedFlows = result.captureSessions || [];
-    var selectElement = document.getElementById('flowsSelect');
-    selectElement.innerHTML = '';
+    var selectElement = document.getElementById("flowsSelect");
+    selectElement.innerHTML = "";
 
     capturedFlows.forEach(function (session, index) {
-      var optionElement = document.createElement('option');
+      var optionElement = document.createElement("option");
       optionElement.value = index;
       optionElement.textContent = session.label || `Flow ${index + 1}`;
       selectElement.appendChild(optionElement);
     });
 
-    selectElement.addEventListener('change', function () {
-      var selectedIndex = selectElement.options[selectElement.selectedIndex].value;
+    selectElement.addEventListener("change", function () {
+      var selectedIndex =
+        selectElement.options[selectElement.selectedIndex].value;
       var selectedFlow = capturedFlows[selectedIndex];
 
       if (selectedFlow) {
-        document.getElementById('flowDetails').textContent = JSON.stringify(selectedFlow, null, 2);
+        document.getElementById("flowDetails").textContent = JSON.stringify(
+          selectedFlow,
+          null,
+          2,
+        );
       } else {
-        document.getElementById('flowDetails').textContent = '';
+        document.getElementById("flowDetails").textContent = "";
       }
     });
   });
 }
 
 function downloadObjectAsJson(exportObj, exportName) {
-  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
-  var downloadAnchorNode = document.createElement('a');
+  var dataStr =
+    "data:text/json;charset=utf-8," +
+    encodeURIComponent(JSON.stringify(exportObj));
+  var downloadAnchorNode = document.createElement("a");
   downloadAnchorNode.setAttribute("href", dataStr);
   downloadAnchorNode.setAttribute("download", exportName + ".json");
   document.body.appendChild(downloadAnchorNode); // required for firefox

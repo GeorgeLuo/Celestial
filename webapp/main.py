@@ -8,7 +8,7 @@ from api.userflow.userflow import get_userflow
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from engine.capture_session import extract_capture_session
+from engine.capture_session import extract_capture_session, read_combined_data_from_capture_session
 from session_context import store_session
 
 app = Flask(__name__, static_folder='session-visualizer/build')
@@ -41,8 +41,14 @@ def fetch_capture_session():
         'client_session_id': 'EmailDemo'
     })
   else:
-    return f'No demo available for id: {capture_session_id}', 404
-
+    zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                 capture_session_id, 'flow.json')
+    
+    combined_data_sorted = read_combined_data_from_capture_session(zip_file_path)
+    return jsonify({
+        'timeline': combined_data_sorted,
+        'client_session_id': capture_session_id
+    })
 
 @app.route('/getScreenshot', methods=['GET'])
 def get_screenshot():
@@ -78,7 +84,10 @@ def upload_file():
     # TODO: figure out how to store these files
     os.remove(zip_path)
 
+    mimodex_url = 'http://localhost:4999/fetchCaptureSession?captureSessionId=' + client_session_id
+
     return jsonify({
+        'url': mimodex_url,
         'timeline': combined_data_sorted,
         'client_session_id': str(client_session_id)
     })
