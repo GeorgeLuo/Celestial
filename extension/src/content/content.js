@@ -12,7 +12,6 @@ chrome.runtime.sendMessage({ action: "contentReloaded", currentUrl: window.locat
 checkState();
 
 function checkState() {
-  // Ask the background page if it's currently capturing
   chrome.runtime.sendMessage({ action: 'checkState' }, function (response) {
     capturing = response.isCapturing;
     replaying = response.isReplaying;
@@ -134,7 +133,6 @@ function handleSpecialKeyUp(event) {
   }
 }
 
-// Add beforeunload event listener to ensure pending event is sent before navigation
 window.addEventListener('beforeunload', function (event) {
   if (pendingEvent) {
     chrome.runtime.sendMessage({ ...pendingEvent, eventBeforeUnload: true });

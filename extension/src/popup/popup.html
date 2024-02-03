@@ -3,6 +3,7 @@
 <html>
   <head>
     <title>User Flow Capture</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <style>
       #buttons {
         display: flex;
@@ -13,10 +14,25 @@
         margin-right: 5px;
         /* Adds a small space between the buttons */
       }
+
+      #settingsButton {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border: none;
+        background: none;
+        cursor: pointer;
+      }
+      #settingsButton i {
+        font-size: 24px; /* Adjust size as per your preference */
+      }
     </style>
   </head>
 
   <body>
+    <button id="settingsButton" title="Settings">
+      <i class="fas fa-cog"></i> <!-- Gear icon from FontAwesome -->
+    </button>
     <div id="buttons">
       <button id="startCapture">Start Capture</button>
       <button id="stopCapture">Stop Capture</button>

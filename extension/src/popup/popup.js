@@ -1,5 +1,9 @@
 // button handlers
 
+document.getElementById("settingsButton").addEventListener("click", function () {
+  window.open("settings.html", "SettingsWindow", "width=400,height=400");
+});
+
 document.getElementById("startCapture").addEventListener("click", function () {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let activeTab = tabs[0];
@@ -79,22 +83,36 @@ document
     });
   });
 
+// Initialize and save default mimodexHost if it's not set
+chrome.storage.sync.get(["mimodexHost"], function (result) {
+  if (!result.mimodexHost) {
+    // Set the default value since it's not already set
+    chrome.storage.sync.set({ mimodexHost: "http://localhost:4999" }, function () {
+      console.log("mimodexHost default value set to http://localhost:4999");
+    });
+  }
+});
+
 function uploadZipAndRedirect(zipFile) {
   var formData = new FormData();
   formData.append("file", zipFile, "flow.zip");
-  fetch("http://localhost:4999/upload", {
-    method: "POST",
-    body: formData,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      if (data.url) {
-        console.log("opening new tab", data.url );
-        chrome.tabs.create({ url: data.url });
-      }
+  // Retrieve the mimodexHost value and use it in the fetch call
+  chrome.storage.sync.get(["mimodexHost"], function (result) {
+    const mimodexHost = result.mimodexHost;
+    fetch(mimodexHost + "/upload", {
+      method: "POST",
+      body: formData,
     })
-    .catch((error) => console.error("Error uploading flow zip:", error));
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+        if (data.url) {
+          console.log("opening new tab", data.url);
+          chrome.tabs.create({ url: data.url });
+        }
+      })
+      .catch((error) => console.error("Error uploading flow zip:", error));
+  });
 }
 
 document.getElementById("exportFlows").addEventListener("click", function () {
