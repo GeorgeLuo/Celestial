@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 
 const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId }) => {
+
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex);
   const [imageSrc, setImageSrc] = useState("");
   const [filterMode, setFilterMode] = useState('screenshot');
@@ -18,8 +19,8 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
       });
   }, [clientSessionId]);
 
-  const navigateImages = useCallback((direction) => {
-    let newIndex = currentImageIndex;
+  const resetFocusObject = useCallback((direction) => {
+    let newIndex = selectedIndex;
 
     while (true) {
       newIndex += direction;
@@ -36,25 +37,10 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
     }
 
     setCurrentImageIndex(newIndex);
-    const newImage = imageList[newIndex];
-    if (newImage?.datatype === 'screenshot') {
-      const filename = newImage?.filename;
-      if (filename) {
-        fetchAndDownloadScreenshot(filename);
-      }
-    }
     onObjectFocus(newIndex);
-  }, [currentImageIndex, imageList, filterMode, onObjectFocus, fetchAndDownloadScreenshot]);
+  }, [currentImageIndex, imageList, filterMode]);
 
-  useEffect(() => {
-    if (imageList[currentImageIndex]) {
-      if (imageList[currentImageIndex].datatype === 'screenshot') {
-        fetchAndDownloadScreenshot(imageList[currentImageIndex].filename);
-      }
-    }
-  }, [currentImageIndex, imageList, fetchAndDownloadScreenshot]);
-
-  useEffect(() => {
+  const findRelevantImage = useCallback((selectedIndex) => {
     const selectedObject = imageList[selectedIndex];
     if (selectedObject) {
       setCurrentImageIndex(selectedIndex);
@@ -74,14 +60,19 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
         }
       }
     }
-  }, [imageList, selectedIndex, fetchAndDownloadScreenshot]);
+  }, [imageList, selectedIndex]);
 
+  useEffect(() => {
+    findRelevantImage(selectedIndex);
+  }, [findRelevantImage]);
+
+  // listen for key events for left and right toggling
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.keyCode === 37) {
-        navigateImages(-1);
+        resetFocusObject(-1);
       } else if (event.keyCode === 39) {
-        navigateImages(1);
+        resetFocusObject(1);
       }
     };
 
@@ -90,7 +81,7 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [navigateImages]);
+  }, [resetFocusObject]);
 
   const handleModeChange = (event) => {
     setFilterMode(event.target.value);
@@ -117,8 +108,8 @@ const ObjectViewer = ({ imageList, onObjectFocus, selectedIndex, clientSessionId
             style={imageStyle}
           />
           <div>
-            <button onClick={() => navigateImages(-1)} disabled={currentImageIndex === 0}>{"<"}</button>
-            <button onClick={() => navigateImages(1)} disabled={currentImageIndex === imageList.length - 1}>{">"}</button>
+            <button onClick={() => resetFocusObject(-1)} disabled={currentImageIndex === 0}>{"<"}</button>
+            <button onClick={() => resetFocusObject(1)} disabled={currentImageIndex === imageList.length - 1}>{">"}</button>
             <label>
               <input
                 type="radio"
