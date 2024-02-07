@@ -195,29 +195,16 @@ function populateCapturedFlowsDropdown() {
     var capturedFlows = result.captureSessions || [];
     var selectElement = document.getElementById("flowsSelect");
     selectElement.innerHTML = "";
-
     capturedFlows.forEach(function (session, index) {
       var optionElement = document.createElement("option");
       optionElement.value = index;
       optionElement.textContent = session.label || `Flow ${index + 1}`;
       selectElement.appendChild(optionElement);
     });
-
-    selectElement.addEventListener("change", function () {
-      var selectedIndex =
-        selectElement.options[selectElement.selectedIndex].value;
-      var selectedFlow = capturedFlows[selectedIndex];
-
-      if (selectedFlow) {
-        document.getElementById("flowDetails").textContent = JSON.stringify(
-          selectedFlow,
-          null,
-          2,
-        );
-      } else {
-        document.getElementById("flowDetails").textContent = "";
-      }
-    });
+    // Set the selected index to the last option if there are any captured flows
+    if (capturedFlows.length > 0) {
+      selectElement.selectedIndex = capturedFlows.length - 1;
+    }
   });
 }
 
