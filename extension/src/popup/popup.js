@@ -1,8 +1,34 @@
 // button handlers
 
-document.getElementById("settingsButton").addEventListener("click", function () {
-  window.open("settings.html", "SettingsWindow", "width=400,height=400");
+function loadSettings() {
+  chrome.storage.sync.get(['mimodexHost'], function(result) {
+    document.getElementById('mimodexHost').value = result.mimodexHost || 'http://localhost:4999';
+  });
+}
+// Save settings function from the original settings.js
+function saveSettings() {
+  let mimodexHost = document.getElementById('mimodexHost').value;
+  chrome.storage.sync.set({mimodexHost: mimodexHost}, function() {
+    console.log('Settings saved');
+    toggleSettings(); // Hide settings div after saving
+  });
+}
+// Toggles the settings div visibility
+function toggleSettings() {
+  console.log("toggleSettings")
+  let settingsDiv = document.getElementById("settingsModal");
+  if (settingsDiv.style.top === "0px") {
+    settingsDiv.style.top = "-100%"; // Hide the settings div by moving it out of view
+  } else {
+    settingsDiv.style.top = "0px"; // Show the settings div by moving it into view
+  }
+}
+// Event listeners
+document.getElementById("settingsButton").addEventListener("click", function() {
+  toggleSettings();
+  loadSettings(); // Ensure settings are up-to-date when showing the div
 });
+document.getElementById('saveSettings').addEventListener('click', saveSettings);
 
 document.getElementById("startCapture").addEventListener("click", function () {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -157,6 +183,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let currentTab = tabs[0];
     labelField.placeholder = currentTab.title;
   });
+  document.getElementById('settingsModal').style.top = "-100%"; // Start with the settings div hidden
+  loadSettings(); // Pre-load settings upon DOMContentLoaded
+
 });
 
 // utilities

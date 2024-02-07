@@ -1,67 +1,129 @@
-<!-- popup.html -->
 <!doctype html>
 <html>
-  <head>
-    <title>User Flow Capture</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
-    <style>
-      #buttons {
-        display: flex;
-        margin-bottom: 5px;
-      }
 
-      #buttons button {
-        margin-right: 5px;
-        /* Adds a small space between the buttons */
-      }
+<head>
+  <title>User Flow Capture</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <style>
+    body {
+      padding: 10px;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
 
-      #settingsButton {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        border: none;
-        background: none;
-        cursor: pointer;
-      }
-      #settingsButton i {
-        font-size: 24px; /* Adjust size as per your preference */
-      }
-    </style>
-  </head>
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
 
-  <body>
+    .row>* {
+      flex: 1;
+      /* Equal width for all children */
+      margin-right: 5px;
+      /* Space between the elements */
+    }
+
+    .row>*:last-child {
+      margin-right: 0;
+      /* Removing margin for the last child */
+    }
+
+    .settingsModal {
+      position: fixed;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      background: white;
+      padding: 20px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      transition: top 0.3s ease-in-out;
+      box-sizing: border-box;
+      /* Include padding and border in the element's total width */
+    }
+
+    #settingsButton {
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    #flowDetails {
+      font-family: monospace;
+      white-space: pre;
+      overflow: auto;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      margin: 5px 0 3px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="settingsModal" id="settingsModal">
+    <div class="row">
+      <label for="mimodexHost">Mimodex Host:</label>
+    </div>
+    <div class="row">
+      <input type="text" id="mimodexHost">
+    </div>
+    <div class="row">
+      <button id="saveSettings">Save</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="startCapture">Start Capture</button>
+    <button id="stopCapture">Stop Capture</button>
     <button id="settingsButton" title="Settings">
-      <i class="fas fa-cog"></i> <!-- Gear icon from FontAwesome -->
+      <i class="fas fa-cog"></i>
     </button>
-    <div id="buttons">
-      <button id="startCapture">Start Capture</button>
-      <button id="stopCapture">Stop Capture</button>
-    </div>
-    <!-- Text field to label the current flow with default value as the title of the tab -->
-    <label for="flowsSelect">Name the flow:</label>
-    <input type="text" id="flowLabel" placeholder="" />
-    <div id="capturedFlowsDropdown">
-      <label for="flowsSelect">Select a captured flow:</label>
-      <select id="flowsSelect">
-        <!-- Options will be dynamically populated here -->
-      </select>
-    </div>
-    <div id="flowDetails">
-      <!-- Flow metadata will be displayed here -->
-    </div>
-    <div id="buttons">
-      <button id="replayFlow">Replay Flow</button>
-      <button id="exportFlow">Export Flow</button>
-      <button id="exportToMimodex">Export to Mimodex</button>
-    </div>
-    <div id="buttons">
-      <button id="exportFlows">Export Flows to JSON</button>
-      <button id="analyzeFlow">Analyze Flow</button>
-      <button id="clearFlows">Clear Flows</button>
-    </div>
-    <script src="lib/FileSaver.min.js"></script>
-    <script src="lib/jszip.min.js"></script>
-    <script src="popup.js"></script>
-    <script src="exportUtils.js"></script>
-  </body>
+  </div>
+  <div class="row">
+    <label for="flowLabel">Name the flow:</label>
+  </div>
+  <div class="row">
+    <input type="text" id="flowLabel" placeholder="" style="flex: 1;">
+  </div>
+
+  <div class="row">
+    <label for="flowsSelect">Select a captured flow:</label>
+  </div>
+  <div class="row">
+    <select id="flowsSelect">
+      <!-- Options will be dynamically populated here -->
+    </select>
+  </div>
+
+  <div id="flowDetails">
+    <!-- Flow metadata will be displayed here -->
+  </div>
+
+  <div class="row">
+    <button id="replayFlow">Replay Flow</button>
+    <button id="exportFlow">Export Flow</button>
+    <button id="exportToMimodex">Export to Mimodex</button>
+  </div>
+
+  <div class="row">
+    <button id="exportFlows">Export Flows to JSON</button>
+    <button id="analyzeFlow">Analyze Flow</button>
+    <button id="clearFlows">Clear Flows</button>
+  </div>
+
+  <script src="lib/FileSaver.min.js"></script>
+  <script src="lib/jszip.min.js"></script>
+  <script src="popup.js"></script>
+  <script src="exportUtils.js"></script>
+</body>
+
 </html>
