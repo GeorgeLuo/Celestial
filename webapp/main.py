@@ -5,10 +5,12 @@ import sys
 from api.elements.elements import get_elements
 from api.intent.intent import get_intent
 from api.userflow.userflow import get_userflow
+from database import get_flow, write_flow
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from engine.capture_session import extract_capture_session, read_combined_data_from_capture_session
+from engine.capture_session import extract_capture_session, read_combined_data_from_capture_session, combine_data_sorted, unpack_capture_session
+
 from session_context import store_session
 
 app = Flask(__name__, static_folder='session-visualizer/build')
@@ -29,11 +31,11 @@ def allowed_file(filename):
 def fetch_capture_session():
   capture_session_id = request.args.get('captureSessionId', '')
   if capture_session_id == 'EmailDemo':
-    zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'],
+    flow_file_path = os.path.join(app.config['UPLOAD_FOLDER'],
                                  'demos/EmailDemo/EmailDemo.zip')
 
     # Use extract_capture_session to process the .zip file
-    combined_data_sorted = extract_capture_session(zip_file_path)
+    combined_data_sorted = extract_capture_session(flow_file_path)
 
     # Return the combined sorted data instead of just flow_data
     return jsonify({
@@ -41,14 +43,19 @@ def fetch_capture_session():
         'client_session_id': 'EmailDemo'
     })
   else:
-    zip_file_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                 capture_session_id, 'flow.json')
+    # flow_file_path = os.path.join(app.config['UPLOAD_FOLDER'],
+    #                              capture_session_id, 'flow.json')
+
+    # combined_data_sorted = read_combined_data_from_capture_session(
+    #     flow_file_path)
     
-    combined_data_sorted = read_combined_data_from_capture_session(zip_file_path)
+    combined_data_sorted = combine_data_sorted(get_flow(capture_session_id))
+
     return jsonify({
         'timeline': combined_data_sorted,
         'client_session_id': capture_session_id
     })
+
 
 @app.route('/getScreenshot', methods=['GET'])
 def get_screenshot():
@@ -76,10 +83,14 @@ def upload_file():
     return redirect(request.url)
   if file and allowed_file(file.filename):
 
+    # unpacks the file and stores it in the uploads folder
     client_session_id, zip_path = store_session(app.config['UPLOAD_FOLDER'],
                                                 file)
 
-    combined_data_sorted = extract_capture_session(zip_path)
+    capture_flow = unpack_capture_session(zip_path)
+    combined_data_sorted = combine_data_sorted(capture_flow)
+
+    write_flow(client_session_id, capture_flow)
 
     # TODO: figure out how to store these files
     os.remove(zip_path)
