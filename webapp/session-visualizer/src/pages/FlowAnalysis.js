@@ -80,6 +80,7 @@ const FlowAnalysis = ({ initialClientSessionId }) => {
           selectedIndex={selectedIndex}
           imageList={imageList}
           clientSessionId={clientSessionId}
+          onObjectFocus={handleObjectFocus}
         >
         </Editor>
       )}

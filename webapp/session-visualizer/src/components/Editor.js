@@ -2,7 +2,7 @@ import React from 'react';
 import './Editor.css';
 import ObjectViewer from './ObjectViewer.js'; // import the ObjectViewer
 
-const Editor = ({ onClose, selectedIndex, imageList, clientSessionId, onImageUpdate }) => {
+const Editor = ({ onClose, selectedIndex, imageList, clientSessionId, onImageUpdate, handleObjectFocus }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -16,6 +16,7 @@ const Editor = ({ onClose, selectedIndex, imageList, clientSessionId, onImageUpd
           isEditable={false} // Pass the isEditable prop as true
           onEdit={onImageUpdate} // Pass a callback function to handle edits
           clientSessionId={clientSessionId}
+          onObjectFocus={handleObjectFocus}
         />
       </div>
     </div>
