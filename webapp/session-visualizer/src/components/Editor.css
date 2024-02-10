@@ -1,18 +1,42 @@
 .modal-overlay {
-    position: fixed; /* or 'absolute' if 'fixed' is not suitable for your layout */
+    position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* assuming you want a semi-transparent overlay */
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
+    align-items: center;
+    justify-content: center;
   }
   
   .modal-content {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch; /* This will ensure children expand to fill the container height */
     background-color: white;
-    padding: 20px;
-    /* Any additional styling for your modal content */
+    width: 90%;
+    height: 90%; /* Assuming we want the modal-content to take up 90% of the modal-overlay height */
+    /* The rest of .modal-content styles remain the same */
+    max-width: 1200px;
+    height: 80vh;
+    margin: auto;
+  }
+  
+  .object-viewer {
+    flex: 2; /* Allocate 2/3rds of the space for object-viewer */
+    display: flex; /* Adding this will allow the child contents to use flexbox layout */
+    flex-direction: column; /* This is optional based on how you want to layout child elements */
+    overflow: auto;
+    height: 100%; /* This will ensure both children of .modal-content stretch to fill available vertical space */
+    padding-top: 1%;
+  }
+  
+  .edit-panel {
+    flex: 1; /* Allocate 1/3rd of the space for edit-panel */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 3%;
   }
   

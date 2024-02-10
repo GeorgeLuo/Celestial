@@ -5,6 +5,7 @@ const ObjectViewer = ({
   onObjectFocus,
   selectedIndex,
   clientSessionId,
+  imageWidth = "50%", // Default value for imageWidth
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex);
   const [imageSrc, setImageSrc] = useState("");
@@ -54,7 +55,7 @@ const ObjectViewer = ({
       setCurrentImageIndex(newIndex);
       onObjectFocus(newIndex);
     },
-    [currentImageIndex, imageList, filterMode],
+    [selectedIndex, imageList, filterMode],
   );
 
   const findRelevantImage = useCallback(
@@ -110,7 +111,7 @@ const ObjectViewer = ({
   };
 
   const imageStyle = {
-    width: "50%",
+    width: imageWidth, // Use the imageWidth prop
     height: "auto",
     resize: "both",
     overflow: "auto",
