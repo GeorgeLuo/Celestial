@@ -79,6 +79,7 @@ const FlowAnalysis = ({ initialClientSessionId }) => {
           onClose={closeEditor}
           selectedIndex={selectedIndex}
           imageList={imageList}
+          clientSessionId={clientSessionId}
         >
         </Editor>
       )}
