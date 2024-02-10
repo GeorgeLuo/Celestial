@@ -5,18 +5,10 @@ const ObjectViewer = ({
   onObjectFocus,
   selectedIndex,
   clientSessionId,
-  isEditable = false,
-  onEdit
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex);
   const [imageSrc, setImageSrc] = useState("");
   const [filterMode, setFilterMode] = useState("screenshot");
-
-  const handleInputChange = (event, index) => {
-    if (isEditable && onEdit) {
-      onEdit(event.target.value, index);
-    }
-  };
 
   const fetchAndDownloadScreenshot = useCallback(
     (filename) => {
@@ -137,20 +129,6 @@ const ObjectViewer = ({
             alt={`image-${currentImageIndex}`}
             style={imageStyle}
           />
-          {isEditable ? (
-            // If in edit mode, render text fields for editing
-            imageList.map((image, index) => (
-              <input
-                key={index}
-                type="text"
-                value={image.src}
-                onChange={(event) => handleInputChange(event, index)}
-              />
-            ))
-          ) : (
-            // In view mode, just display the image sources as text
-            <p>{imageList[currentImageIndex].src}</p>
-          )}
           <div>
             <button
               onClick={() => resetFocusObject(-1)}

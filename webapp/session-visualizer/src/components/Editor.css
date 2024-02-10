@@ -1,14 +1,18 @@
-/* Add this to your CSS file */
 .modal-overlay {
-    position: fixed;
+    position: fixed; /* or 'absolute' if 'fixed' is not suitable for your layout */
     top: 0;
-    left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
-    z-index: 1050; /* Ensure that the modal overlay is above most other content */
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* assuming you want a semi-transparent overlay */
+    display: flex;
+    align-items: center; /* Center vertically */
+    justify-content: center; /* Center horizontally */
   }
+  
   .modal-content {
-    z-index: 1051; /* Higher than the overlay to ensure it appears on top */
+    background-color: white;
+    padding: 20px;
+    /* Any additional styling for your modal content */
   }
   
