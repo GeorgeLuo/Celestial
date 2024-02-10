@@ -15,6 +15,22 @@ const SessionSelector = ({
     setSelectedBoxIndex(selectedIndex);
   }, [selectedIndex]);
 
+  const fetchCaptureSession = (captureSessionId) => {
+    fetch(
+      `/fetchCaptureSession?captureSessionId=${encodeURIComponent(
+        captureSessionId,
+      )}`,
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        setFlowData(data.timeline);
+        onUpload(data.timeline, data.client_session_id);
+      })
+      .catch((error) => {
+        console.error("Error fetching the demo:", error);
+      });
+  };
+  
   useEffect(() => {
     if (clientSessionId) {
       fetchCaptureSession(clientSessionId);
@@ -38,22 +54,6 @@ const SessionSelector = ({
           console.error("Error uploading the file:", error);
         });
     }
-  };
-
-  const fetchCaptureSession = (captureSessionId) => {
-    fetch(
-      `/fetchCaptureSession?captureSessionId=${encodeURIComponent(
-        captureSessionId,
-      )}`,
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        setFlowData(data.timeline);
-        onUpload(data.timeline, data.client_session_id);
-      })
-      .catch((error) => {
-        console.error("Error fetching the demo:", error);
-      });
   };
 
   useEffect(() => {

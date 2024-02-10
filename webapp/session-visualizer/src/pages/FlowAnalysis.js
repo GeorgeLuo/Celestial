@@ -3,12 +3,22 @@ import React, { useState, useCallback } from "react";
 import SessionSelector from "../components/ContentNavigator";
 import ObjectViewer from "../components/ObjectViewer";
 
+import Editor from "../components/Editor";
+
 const FlowAnalysis = ({ initialClientSessionId }) => {
   const [clientSessionId, setClientSessionId] = useState(
     initialClientSessionId,
   );
   const [imageList, setImageList] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const [isEditorOpen, setEditorOpen] = useState(false);
+  const openEditor = () => {
+    setEditorOpen(true);
+  };
+  const closeEditor = () => {
+    setEditorOpen(false);
+  };
 
   const startSession = useCallback((newImageList, clientSessionId) => {
     setClientSessionId(clientSessionId);
@@ -50,8 +60,28 @@ const FlowAnalysis = ({ initialClientSessionId }) => {
               {JSON.stringify(imageList[selectedIndex], null, 2)}
             </pre>
           </div>
+
         )}
       </div>
+      <button
+        onClick={openEditor}
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1050, // Ensuring that this button is above other elements like the modal
+        }}
+      >
+        Focus View
+      </button>
+      {isEditorOpen && (
+        <Editor
+          onClose={closeEditor}
+          selectedIndex={selectedIndex}
+          imageList={imageList}
+        >
+        </Editor>
+      )}
     </div>
   );
 };

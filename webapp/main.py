@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request, redirect, flash, jsonify
+from flask import Flask, send_from_directory, request, redirect, flash, jsonify
 import os
 
 import sys
@@ -9,7 +9,7 @@ from database import get_flow, write_flow
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from engine.capture_session import extract_capture_session, read_combined_data_from_capture_session, combine_data_sorted, unpack_capture_session
+from engine.capture_session import extract_capture_session, combine_data_sorted, unpack_capture_session
 
 from session_context import store_session
 
