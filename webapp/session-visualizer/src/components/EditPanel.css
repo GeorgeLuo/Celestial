@@ -1,0 +1,22 @@
+.edit-panel {
+    text-align: left;
+}
+
+.edit-field {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    margin-bottom: 10px;
+    padding-right: 10%; /* Added padding to the right of the edit field */
+}
+
+.edit-label {
+    margin-right: 2%;
+    text-align: left;
+    width: 30%;
+}
+
+.edit-input {
+    flex-grow: 1;
+    /* Input field takes the remaining space in the flex container */
+}

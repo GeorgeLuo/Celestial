@@ -19,7 +19,7 @@
     height: 90%; /* Assuming we want the modal-content to take up 90% of the modal-overlay height */
     /* The rest of .modal-content styles remain the same */
     max-width: 1200px;
-    height: 80vh;
+    height: 90vh;
     margin: auto;
   }
   
